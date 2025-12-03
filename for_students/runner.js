@@ -2,247 +2,169 @@
 // @ts-check
 
 import * as T from "../libs/CS559-Three/build/three.module.js";
+import { clone as cloneSkeleton } from "../libs/CS559-Three/examples/jsm/utils/SkeletonUtils.js";
 import { GrObject } from "../libs/CS559-Framework/GrObject.js";
 import { Random } from "./random.js";
 import { GrSkyscraper, sampleSkyscraper } from "./building.js";
+import { load3DModel } from "./loader.js";
 
 // Player character for the runner game
 export class Player extends GrObject {
   constructor() {
     const group = new T.Group();
-
-    // Create a textured character with procedural textures - SMALLER scale
-    const scale = 0.5; // Make character half the size
-
-    // Create procedural clothing texture
-    const createClothTexture = (color) => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 64;
-      canvas.height = 64;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = color;
-      ctx.fillRect(0, 0, 64, 64);
-      // Add fabric texture
-      for (let i = 0; i < 200; i++) {
-        ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.1})`;
-        ctx.fillRect(Math.random() * 64, Math.random() * 64, 2, 2);
-      }
-      return new T.CanvasTexture(canvas);
-    };
-
-    // Body with blue hoodie texture
-    const bodyGeometry = new T.BoxGeometry(0.6 * scale, 1.5 * scale, 0.4 * scale);
-    const bodyTexture = createClothTexture('#1e90ff');
-    const bodyMaterial = new T.MeshStandardMaterial({
-      map: bodyTexture,
-      roughness: 0.8,
-      metalness: 0.1
-    });
-    const body = new T.Mesh(bodyGeometry, bodyMaterial);
-    body.position.y = 0.75 * scale;
-    group.add(body);
-
-    // Head with skin tone and features
-    const headGeometry = new T.SphereGeometry(0.3 * scale);
-    const headMaterial = new T.MeshStandardMaterial({
-      color: 0xffcc99,
-      roughness: 0.7
-    });
-    const head = new T.Mesh(headGeometry, headMaterial);
-    head.position.y = 1.8 * scale;
-    group.add(head);
-
-    // Add a red cap/beanie
-    const capGeometry = new T.CylinderGeometry(0.35 * scale, 0.3 * scale, 0.25 * scale, 16);
-    const capTexture = createClothTexture('#ff0000');
-    const capMaterial = new T.MeshStandardMaterial({
-      map: capTexture,
-      roughness: 0.9
-    });
-    const cap = new T.Mesh(capGeometry, capMaterial);
-    cap.position.y = 2.1 * scale;
-    group.add(cap);
-
-    // Add arms with hoodie
-    const armGeometry = new T.BoxGeometry(0.2 * scale, 0.8 * scale, 0.2 * scale);
-    const armMaterial = new T.MeshStandardMaterial({
-      map: bodyTexture,
-      roughness: 0.8
-    });
-
-    const leftArm = new T.Mesh(armGeometry, armMaterial);
-    leftArm.position.set(-0.45 * scale, 0.6 * scale, 0);
-    group.add(leftArm);
-
-    const rightArm = new T.Mesh(armGeometry, armMaterial);
-    rightArm.position.set(0.45 * scale, 0.6 * scale, 0);
-    group.add(rightArm);
-
-    // Add legs with jeans texture
-    const legGeometry = new T.BoxGeometry(0.25 * scale, 0.7 * scale, 0.25 * scale);
-    const jeansTexture = createClothTexture('#1a4d7a');
-    const legMaterial = new T.MeshStandardMaterial({
-      map: jeansTexture,
-      roughness: 0.9
-    });
-
-    const leftLeg = new T.Mesh(legGeometry, legMaterial);
-    leftLeg.position.set(-0.15 * scale, -0.35 * scale, 0);
-    group.add(leftLeg);
-
-    const rightLeg = new T.Mesh(legGeometry, legMaterial);
-    rightLeg.position.set(0.15 * scale, -0.35 * scale, 0);
-    group.add(rightLeg);
-
-    // Add white sneakers
-    const shoeGeometry = new T.BoxGeometry(0.3 * scale, 0.15 * scale, 0.4 * scale);
-    const shoeCanvas = document.createElement('canvas');
-    shoeCanvas.width = 32;
-    shoeCanvas.height = 32;
-    const shoeCtx = shoeCanvas.getContext('2d');
-    shoeCtx.fillStyle = '#ffffff';
-    shoeCtx.fillRect(0, 0, 32, 32);
-    // Add Nike-like swoosh
-    shoeCtx.strokeStyle = '#000000';
-    shoeCtx.lineWidth = 2;
-    shoeCtx.beginPath();
-    shoeCtx.moveTo(5, 20);
-    shoeCtx.quadraticCurveTo(16, 15, 27, 12);
-    shoeCtx.stroke();
-    const shoeTexture = new T.CanvasTexture(shoeCanvas);
-    const shoeMaterial = new T.MeshStandardMaterial({
-      map: shoeTexture,
-      roughness: 0.6
-    });
-
-    const leftShoe = new T.Mesh(shoeGeometry, shoeMaterial);
-    leftShoe.position.set(-0.15 * scale, -0.75 * scale, 0.05 * scale);
-    group.add(leftShoe);
-
-    const rightShoe = new T.Mesh(shoeGeometry, shoeMaterial);
-    rightShoe.position.set(0.15 * scale, -0.75 * scale, 0.05 * scale);
-    group.add(rightShoe);
-
     super("Player", group);
 
-    this.lane = 1; // 0 = left, 1 = center, 2 = right
+    // --- GAMEPLAY VARIABLES ---
+    this.lane = 1;
+    this.lanePositions = [-1, 0, 1]; // x-coordinates for Left, Center, Right
+    this.targetLane = this.lane;
+    this.laneChangeProgress = 0;
     this.isJumping = false;
     this.isSliding = false;
     this.jumpVelocity = 0;
     this.baseY = 0;
     this.slideTimer = 0;
-    this.laneChangeProgress = 0;
-    this.targetLane = 1;
-    this.animationTime = 0; // For running animation
 
-    // Store references to body parts for animation
-    this.leftArm = leftArm;
-    this.rightArm = rightArm;
-    this.leftLeg = leftLeg;
-    this.rightLeg = rightLeg;
-    this.body = body;
+    // --- ANIMATION VARIABLES ---
+    this.mixer = null;       // Controls animations for the loaded model
+    this.runAction = null;   // Running animation
+    this.jumpAction = null;  // Jumping animation
+    this.model = null;       // Reference to the 3D character mesh
 
-    this.lanePositions = [-1, 0, 1]; // X offsets for lanes
+    // --- LOAD BOTH MODELS ---
+    // We use Promise.all to wait for BOTH files to finish downloading
+    Promise.all([
+      load3DModel("./assets/snazy_jogger_animated.glb"), // New runner model
+      load3DModel("./assets/jumping.glb")                // Jump animation source
+    ]).then(([runData, jumpData]) => {
+
+      // 1. SETUP THE VISIBLE MODEL (Use the Running file)
+      // Clone with skeleton preservation so animations work
+      const model = cloneSkeleton(runData.scene);
+      // Enlarge character a bit for better visibility
+      model.scale.set(0.8, 0.8, 0.8);
+      model.rotation.y = 0; // Face down-track (+Z)
+
+      group.add(model);
+      this.model = model;
+
+      // 2. SETUP THE ANIMATION MIXER
+      // The mixer controls the *visible model*
+      this.mixer = new T.AnimationMixer(model);
+
+      // 3. EXTRACT ANIMATIONS
+      // Get the run clip from the first file
+      const runClip = runData.animations[0];
+      // Get the jump clip from the second file
+      const jumpClip = jumpData.animations[0];
+
+      if (runClip && jumpClip) {
+        // Create playable actions
+        this.runAction = this.mixer.clipAction(runClip);
+        this.jumpAction = this.mixer.clipAction(jumpClip);
+
+        // Slow the running animation slightly
+        this.runAction.timeScale = 0.8;
+
+        // Configure Jump to only play once (don't loop in mid-air)
+        this.jumpAction.loop = T.LoopOnce;
+        this.jumpAction.clampWhenFinished = true; // Freeze at end of jump
+
+        // Start Running immediately
+        this.runAction.play();
+      }
+    }).catch(err => {
+      console.error("Error loading character files:", err);
+    });
   }
 
-  moveLeft() {
-    if (this.lane < 2 && this.laneChangeProgress === 0) {
-      this.lane++;
-      this.targetLane = this.lane;
-      this.laneChangeProgress = 1;
-    }
-  }
-
-  moveRight() {
-    if (this.lane > 0 && this.laneChangeProgress === 0) {
-      this.lane--;
-      this.targetLane = this.lane;
-      this.laneChangeProgress = 1;
-    }
-  }
+  // --- MOVEMENT LOGIC ---
 
   jump() {
+    // Only jump if we are currently on the ground
     if (!this.isJumping && !this.isSliding) {
       this.isJumping = true;
-      this.jumpVelocity = 0.25; // Higher initial velocity for bigger jump
+      this.jumpVelocity = 0.20; // Physics upward force
+
+      // ANIMATION: Switch from Run to Jump
+      if (this.runAction && this.jumpAction) {
+        this.runAction.stop();   // Stop running
+        this.jumpAction.reset(); // Rewind jump to start
+        this.jumpAction.play();  // Play jump
+      }
     }
   }
 
   slide() {
     if (!this.isJumping && !this.isSliding) {
       this.isSliding = true;
-      this.slideTimer = 30; // frames
-      // Scale down the character
+      this.slideTimer = 0.6; // seconds
       this.objects[0].scale.y = 0.5;
       this.objects[0].position.y = this.baseY - 0.4;
     }
   }
 
   update(delta) {
-    // Handle lane changing animation
-    if (this.laneChangeProgress > 0) {
-      this.laneChangeProgress -= 0.1;
-      if (this.laneChangeProgress < 0) this.laneChangeProgress = 0;
+    // 1. UPDATE ANIMATION MIXER (This makes the character move)
+    if (this.mixer) {
+      this.mixer.update(delta * 0.001); // Convert milliseconds to seconds
+      // Keep the animated model from drifting forward if the clip has root motion
+      if (this.model) {
+        this.model.position.z = 0;
+      }
     }
 
-    const currentX = this.lanePositions[this.targetLane];
-    const targetX = currentX;
-    this.objects[0].position.x += (targetX - this.objects[0].position.x) * 0.2;
-
-    // Running animation - swing arms and legs
-    if (!this.isJumping && !this.isSliding) {
-      this.animationTime += 0.2; // Animation speed
-
-      const swingAmount = 0.6; // How far arms/legs swing
-      const armSwing = Math.sin(this.animationTime) * swingAmount;
-      const legSwing = Math.sin(this.animationTime) * swingAmount;
-
-      // Arms swing opposite to legs
-      this.leftArm.rotation.x = armSwing;
-      this.rightArm.rotation.x = -armSwing;
-
-      // Legs swing
-      this.leftLeg.rotation.x = legSwing;
-      this.rightLeg.rotation.x = -legSwing;
-
-      // Add slight body bob
-      this.body.position.y = 0.75 * 0.5 + Math.abs(Math.sin(this.animationTime * 2)) * 0.03;
-    } else {
-      // Reset animation when jumping or sliding
-      this.leftArm.rotation.x = 0;
-      this.rightArm.rotation.x = 0;
-      this.leftLeg.rotation.x = 0;
-      this.rightLeg.rotation.x = 0;
-      this.body.position.y = 0.75 * 0.5;
-    }
-
-    // Handle jumping
+    // 2. PHYSICS: HANDLE JUMPING GRAVITY
     if (this.isJumping) {
-      this.jumpVelocity -= 0.008; // Reduced gravity for longer hang time
+      this.jumpVelocity -= 0.01; // Gravity
       this.objects[0].position.y += this.jumpVelocity;
 
+      // Check for Landing
       if (this.objects[0].position.y <= this.baseY) {
         this.objects[0].position.y = this.baseY;
         this.isJumping = false;
         this.jumpVelocity = 0;
+
+        // ANIMATION: Switch back to Run
+        if (this.runAction && this.jumpAction) {
+          this.jumpAction.stop();
+          this.runAction.play();
+        }
       }
     }
 
-    // Handle sliding
+    // 3. HANDLE SLIDING TIMER
     if (this.isSliding) {
-      this.slideTimer--;
+      this.slideTimer -= delta * 0.001;
       if (this.slideTimer <= 0) {
         this.isSliding = false;
         this.objects[0].scale.y = 1;
         this.objects[0].position.y = this.baseY;
       }
     }
+
+    // 4. LOGIC: LANE CHANGING
+    if (this.laneChangeProgress > 0) {
+      this.laneChangeProgress -= 0.1;
+      if (this.laneChangeProgress < 0) this.laneChangeProgress = 0;
+    }
+    const targetX = this.lanePositions[this.targetLane];
+    this.objects[0].position.x += (targetX - this.objects[0].position.x) * 0.2;
   }
 
+  // Bounding box for collisions
   getBoundingBox() {
     const box = new T.Box3();
     box.setFromObject(this.objects[0]);
     return box;
+  }
+
+  // Keep your other methods (moveLeft, moveRight, etc.)
+  moveLeft() {
+    if (this.lane < 2) { this.lane++; this.targetLane = this.lane; this.laneChangeProgress = 1; }
+  }
+  moveRight() {
+    if (this.lane > 0) { this.lane--; this.targetLane = this.lane; this.laneChangeProgress = 1; }
   }
 }
 
@@ -880,6 +802,9 @@ export class RunnerGame extends GrObject {
   }
 
   update(delta) {
+    // Always tick player animations so the model doesn't freeze
+    this.player.update(delta);
+
     // Handle start animation
     if (this.startAnimationActive) {
       this.startAnimationTime += delta / 1000; // Convert to seconds
@@ -912,9 +837,6 @@ export class RunnerGame extends GrObject {
         this.camera.position.z = -5;
       }
     }
-
-    // Update player
-    this.player.update(delta);
 
     // Update chase character
     this.chaseCharacter.update(delta, this.player.objects[0].position.z);
