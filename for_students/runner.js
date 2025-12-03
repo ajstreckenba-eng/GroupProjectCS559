@@ -114,44 +114,7 @@ export class Player extends GrObject {
         this.model.position.z = 0;
       }
     }
-
-<<<<<<< HEAD
     // 2. PHYSICS: HANDLE JUMPING GRAVITY
-=======
-    const currentX = this.lanePositions[this.targetLane];
-    const targetX = currentX;
-    this.objects[0].position.x += (targetX - this.objects[0].position.x) * 0.2;
-
-    // Running animation - swing arms and legs
-    if (!this.isJumping && !this.isSliding) {
-      this.animationTime += 0.2; // Animation speed
-
-      const swingAmount = 0.6; // How far arms/legs swing
-      const armSwing = Math.sin(this.animationTime) * swingAmount;
-      const legSwing = Math.sin(this.animationTime) * swingAmount;
-
-      // Arms swing opposite to legs
-      this.leftArm.rotation.x = armSwing;
-      this.rightArm.rotation.x = -armSwing;
-
-      // Legs swing
-      this.leftLeg.rotation.x = legSwing;
-      this.rightLeg.rotation.x = -legSwing;
-
-      // Add slight body bob
-      this.body.position.y =
-        0.75 * 0.5 + Math.abs(Math.sin(this.animationTime * 2)) * 0.03;
-    } else {
-      // Reset animation when jumping or sliding
-      this.leftArm.rotation.x = 0;
-      this.rightArm.rotation.x = 0;
-      this.leftLeg.rotation.x = 0;
-      this.rightLeg.rotation.x = 0;
-      this.body.position.y = 0.75 * 0.5;
-    }
-
-    // Handle jumping
->>>>>>> b0adc1a4025e2ff5b75f3fcfc47fa8979f17d2b7
     if (this.isJumping) {
       this.jumpVelocity -= 0.01; // Gravity
       this.objects[0].position.y += this.jumpVelocity;
