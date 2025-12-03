@@ -10,32 +10,30 @@ import * as T from "../libs/CS559-Three/build/three.module.js";
 // Game state management
 let world = null;
 let runnerGame = null;
-let gameState = 'start'; // 'start', 'playing', 'paused'
+let gameState = "start"; // 'start', 'playing', 'paused'
 let currentScore = 0;
-let highScore = parseInt(localStorage.getItem('cityRunnerHighScore')) || 0;
+let highScore = parseInt(localStorage.getItem("cityRunnerHighScore")) || 0;
 let animationFrameId = null;
 let isNightMode = false; // Day mode by default
 
-const fogColor = new T.Color(0xffffff);
-
 // Screen elements
-const startScreen = document.getElementById('start-screen');
-const gameContainer = document.getElementById('game-container');
-const pauseScreen = document.getElementById('pause-screen');
+const startScreen = document.getElementById("start-screen");
+const gameContainer = document.getElementById("game-container");
+const pauseScreen = document.getElementById("pause-screen");
 
 // Button elements
-const startButton = document.getElementById('start-button');
-const pauseButton = document.getElementById('pause-button');
-const resumeButton = document.getElementById('resume-button');
-const restartButton = document.getElementById('restart-button');
-const dayModeButton = document.getElementById('day-mode-button');
-const nightModeButton = document.getElementById('night-mode-button');
+const startButton = document.getElementById("start-button");
+const pauseButton = document.getElementById("pause-button");
+const resumeButton = document.getElementById("resume-button");
+const restartButton = document.getElementById("restart-button");
+const dayModeButton = document.getElementById("day-mode-button");
+const nightModeButton = document.getElementById("night-mode-button");
 
 // Score elements
-const scoreValue = document.getElementById('score-value');
-const pauseScoreValue = document.getElementById('pause-score-value');
-const pauseHighScoreValue = document.getElementById('pause-high-score-value');
-const highScoreValue = document.getElementById('high-score-value');
+const scoreValue = document.getElementById("score-value");
+const pauseScoreValue = document.getElementById("pause-score-value");
+const pauseHighScoreValue = document.getElementById("pause-high-score-value");
+const highScoreValue = document.getElementById("high-score-value");
 
 // Initialize high score display
 highScoreValue.textContent = highScore;
@@ -54,28 +52,25 @@ function initGame() {
 
   world.groundplane.material.visible = false;
 
+  let fogColor = isNightMode ? new T.Color(0x0a0a1a) : new T.Color(0xffffff);
+
   // Create runner game instead of city
   runnerGame = new RunnerGame({
     seed: 12345,
     gridSize: 16,
     blockSize: 4,
-    roadWidth: 2,
+    roadWidth: 3,
     fogParams: {
-      color: isNightMode ? new T.Color(0x0a0a1a) : fogColor,
+      color: fogColor,
       near: 0,
-      far: 50,
+      far: 10,
     },
     isNightMode: isNightMode,
   });
 
   world.add(runnerGame);
 
-  // Sky color based on mode
-  if (isNightMode) {
-    world.scene.background = new T.Color(0x0a0a1a); // Dark blue night sky
-  } else {
-    world.scene.background = new T.Color(0x87ceeb); // Sky blue
-  }
+  world.scene.background = fogColor;
 
   // Lighting based on mode
   if (isNightMode) {
@@ -101,7 +96,7 @@ function initGame() {
   world.camera = runnerGame.camera;
 
   // Handle window resize
-  window.addEventListener('resize', () => {
+  window.addEventListener("resize", () => {
     if (world && world.renderer && world.camera) {
       world.camera.aspect = window.innerWidth / window.innerHeight;
       world.camera.updateProjectionMatrix();
@@ -129,25 +124,26 @@ function updateScore(score) {
 function updateHighScore() {
   if (currentScore > highScore) {
     highScore = currentScore;
-    localStorage.setItem('cityRunnerHighScore', highScore);
+    localStorage.setItem("cityRunnerHighScore", highScore);
     highScoreValue.textContent = highScore;
   }
 }
 
 // Game loop
 function gameLoop() {
-  if (gameState !== 'playing') return;
+  if (gameState !== "playing") return;
 
   // Update runner game
   if (runnerGame) {
     const gameOver = runnerGame.stepWorld(16.67, 0);
 
     // Update score based on distance and coins
-    const score = Math.floor(runnerGame.distance) + (runnerGame.coinsCollected * 10);
+    const score =
+      Math.floor(runnerGame.distance) + runnerGame.coinsCollected * 10;
     updateScore(score);
 
     // Update coin display
-    const coinValue = document.getElementById('coin-value');
+    const coinValue = document.getElementById("coin-value");
     if (coinValue) {
       coinValue.textContent = runnerGame.coinsCollected;
     }
@@ -168,15 +164,15 @@ function gameLoop() {
 
 // Handle game over
 function handleGameOver() {
-  gameState = 'paused';
+  gameState = "paused";
   updateHighScore();
 
   // Show game over in pause screen
   pauseScoreValue.textContent = currentScore;
   pauseHighScoreValue.textContent = highScore;
 
-  gameContainer.style.display = 'none';
-  pauseScreen.style.display = 'flex';
+  gameContainer.style.display = "none";
+  pauseScreen.style.display = "flex";
 
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
@@ -185,13 +181,13 @@ function handleGameOver() {
 
 // Start the game
 function startGame() {
-  gameState = 'playing';
+  gameState = "playing";
   currentScore = 0;
   updateScore(0);
 
-  startScreen.style.display = 'none';
-  pauseScreen.style.display = 'none';
-  gameContainer.style.display = 'block';
+  startScreen.style.display = "none";
+  pauseScreen.style.display = "none";
+  gameContainer.style.display = "block";
 
   if (!world) {
     initGame();
@@ -203,10 +199,10 @@ function startGame() {
 
 // Pause the game
 function pauseGame() {
-  if (gameState === 'playing') {
-    gameState = 'paused';
-    gameContainer.style.display = 'none';
-    pauseScreen.style.display = 'flex';
+  if (gameState === "playing") {
+    gameState = "paused";
+    gameContainer.style.display = "none";
+    pauseScreen.style.display = "flex";
 
     // Update pause screen scores
     pauseScoreValue.textContent = currentScore;
@@ -220,10 +216,10 @@ function pauseGame() {
 
 // Resume the game
 function resumeGame() {
-  if (gameState === 'paused') {
-    gameState = 'playing';
-    pauseScreen.style.display = 'none';
-    gameContainer.style.display = 'block';
+  if (gameState === "paused") {
+    gameState = "playing";
+    pauseScreen.style.display = "none";
+    gameContainer.style.display = "block";
 
     gameLoop();
   }
@@ -239,68 +235,68 @@ function restartGame() {
   updateHighScore();
 
   // Clear the game container
-  const div1 = document.getElementById('div1');
+  const div1 = document.getElementById("div1");
   if (div1) {
-    div1.innerHTML = '';
+    div1.innerHTML = "";
   }
 
   world = null;
   runnerGame = null;
-  gameState = 'start';
+  gameState = "start";
   currentScore = 0;
 
-  pauseScreen.style.display = 'none';
-  gameContainer.style.display = 'none';
-  startScreen.style.display = 'flex';
+  pauseScreen.style.display = "none";
+  gameContainer.style.display = "none";
+  startScreen.style.display = "flex";
 }
 
 // Mode selector event listeners
-dayModeButton.addEventListener('click', () => {
+dayModeButton.addEventListener("click", () => {
   isNightMode = false;
-  dayModeButton.classList.add('active');
-  nightModeButton.classList.remove('active');
+  dayModeButton.classList.add("active");
+  nightModeButton.classList.remove("active");
 });
 
-nightModeButton.addEventListener('click', () => {
+nightModeButton.addEventListener("click", () => {
   isNightMode = true;
-  nightModeButton.classList.add('active');
-  dayModeButton.classList.remove('active');
+  nightModeButton.classList.add("active");
+  dayModeButton.classList.remove("active");
 });
 
 // Event listeners
-startButton.addEventListener('click', startGame);
-pauseButton.addEventListener('click', pauseGame);
-resumeButton.addEventListener('click', resumeGame);
-restartButton.addEventListener('click', restartGame);
+startButton.addEventListener("click", startGame);
+pauseButton.addEventListener("click", pauseGame);
+resumeButton.addEventListener("click", resumeGame);
+restartButton.addEventListener("click", restartGame);
 
 // Keyboard controls
-document.addEventListener('keydown', (event) => {
+document.addEventListener("keydown", (event) => {
   // Pause controls
-  if (event.key === 'Escape' || event.key === 'p' || event.key === 'P') {
-    if (gameState === 'playing') {
+  if (event.key === "Escape" || event.key === "p" || event.key === "P") {
+    if (gameState === "playing") {
       pauseGame();
-    } else if (gameState === 'paused') {
+    } else if (gameState === "paused") {
       resumeGame();
     }
     return;
   }
 
   // Game controls
-  if (gameState === 'playing' && runnerGame && runnerGame.player) {
+  if (gameState === "playing" && runnerGame && runnerGame.player) {
     switch (event.key) {
-      case 'ArrowLeft':
+      case "ArrowLeft":
         event.preventDefault();
         runnerGame.player.moveLeft();
         break;
-      case 'ArrowRight':
+      case "ArrowRight":
         event.preventDefault();
         runnerGame.player.moveRight();
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         event.preventDefault();
         runnerGame.player.jump();
         break;
-      case 'ArrowDown':
+      case "ArrowDown":
         event.preventDefault();
         runnerGame.player.slide();
         break;
