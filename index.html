@@ -17,19 +17,33 @@
 
 <main class="main list" role="main">
 	<header class="main__header">
-		<h1 class="main__title">Workbook 10: Advanced Topics</h1>
+		<h1 class="main__title">Workbook 12: Graphics Town</h1>
 	</header>
 	<div class="content main__content clearfix">
         
 
-        <p>This workbook is due on Tuesday, November 18, 2025.</p><p>This week, the TAs will cover some advanced topics in Computer Graphics during the lectures, including pose detection and animation, and cloth simulation with mass-spring system. These topics are usually covered in more advanced graphics and computer vision courses, for example, <a href="https://www.biostat.wisc.edu/~yli/bmi771_cs771_25fall/">CS771</a> and <a href="https://pages.cs.wisc.edu/~sifakis/courses/cs839-s22/">CS839</a>, and the TAs will give you a brief preview and introduction to these topics.</p>
-<h2 id="readings">Readings</h2>
-<p>The main source of the material in this workbook are the guest lectures and the references in the workbook.</p>
-<h2 id="exercises">Exercises</h2>
-<p>There are three exercises on the next two pages. You can use the things you create in this Workbook for the Graphics Town (individual) Project and the Game (group) Project.</p>
-    <div class="page-rubric-container">
+        <p>This workbook is due on Tuesday, December 9, 2025.</p><p>This workbook is a chance to put everything from class together!</p>
+<p>There is one big box: Graphics Town. It is a separate page on <a href="./docs/1/">Page &nbsp;1&nbsp; (Graphics Town)</a>.</p>
+<p>Rather than having a lot of small boxes, there is a single big window. And in it, you get to make a world. It&rsquo;s a chance for you to be creative and make something cool.</p>
+<p>We realize that you have limited time to do this, so our expectations are reasonable.</p>
+<p>A key rule of graphics town: you only get points for what you document in the Workbook Form (or in the html file below the Canvas)! If you do it, but don&rsquo;t describe it (as the instructions tell you), you didn&rsquo;t do it (unless it is obvious).</p>
+<h2>Learning Goals</h2>
+<ol>
+    <li>To gain experience applying the concepts from class in order to create something more interesting</li>
+    <li>To apply texturing techniques to create appearances</li>
+    <li>To practice fitting different types of models together to make a scene</li>
+    <li>To experiment with methods for creating objects and behaviors</li>
+    <li>To experiment with advanced interactive graphics techniques</li>
+</ol>
+<h2 id="due-date-and-grading">Due Date and Grading</h2>
+<p>The assignment is due the last day of class. We cannot accept late assignments.</p>
+<p>A &ldquo;rubric&rdquo; is given at on <a href="./docs/4/">Page &nbsp;4&nbsp; (Graphics Town Rubric)</a>, but be warned: it is not the specific &ldquo;point counting&rdquo; rubrics we have had for prior assignments.</p>
+<p><strong>Note:</strong> as with Workbooks, you must both commit and push your work to GitHub as well as complete the Workbook Form.</p>
+<h2 id="a-note-on-collaboration">A Note on Collaboration</h2>
+<p>Every student must turn in an assignment: you are not allowed to work in groups. Please be sure to give attributions.</p>
+  <div class="page-rubric-container">
 <details class="page__rubric">
-    <summary>Workbook Rubric (12 basic + 7 advanced (6 max) = 18 total)</summary>
+    <summary>Workbook Rubric (23 basic + 16 advanced (12 max) = 35 total)</summary>
     <br/>
     <table class="page-rubric-table" style="background-color: #f0f0f0;">
         <thead>
@@ -45,122 +59,241 @@
                 <td></td>
                 <td>1</td>
                 <td></td>
-                <td>correct WB10 Workbook Form submission on time</td>
+                <td>correct P2 Workbook Form submission on time</td>
             </tr>
             <tr>
-                        <td><a href="./docs/1/#box-10-01-02">10-01-02</a></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td>1</td>
                 <td></td>
-                <td>Correctly show the keypoints in 3D space using basic geometry objects</td>
+                <td>program runs (or seems to run correctly - worth looking at error console)</td>
             </tr>
             <tr>
-                        <td><a href="./docs/1/#box-10-01-02">10-01-02</a></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td>1</td>
                 <td></td>
-                <td>Correctly connect all the keypoints using basic geometry objects to create a hand skeleton</td>
+                <td>frame rate seems OK (not too slow)</td>
             </tr>
             <tr>
-                        <td><a href="./docs/1/#box-10-01-02">10-01-02</a></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td>1</td>
                 <td></td>
-                <td>The movement of the hand skeletion is correctly following the video</td>
+                <td>UI is there and seems to work (can lookat and ride)</td>
             </tr>
             <tr>
-                        <td><a href="./docs/1/#box-10-01-04">10-01-04</a></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td>1</td>
                 <td></td>
-                <td>Correctly show the keypoints in 3D space using basic geometry objects</td>
+                <td>highlight list looks OK</td>
             </tr>
             <tr>
-                        <td><a href="./docs/1/#box-10-01-04">10-01-04</a></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td>1</td>
                 <td></td>
-                <td>Correctly connect all the keypoints using basic geometry objects</td>
+                <td>visually distinct from example</td>
             </tr>
             <tr>
-                        <td><a href="./docs/1/#box-10-01-04">10-01-04</a></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td>1</td>
                 <td></td>
-                <td>The movement of the hand skeletion is correctly following the video</td>
+                <td>theme makes sense (need explanation)</td>
             </tr>
             <tr>
-                        <td><a href="./docs/1/#box-10-01-02">10-01-02</a></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td></td>
                 <td>1</td>
-                <td>Make the hand pose animation more creative</td>
+                <td>cool theme bonus (need explanation)</td>
             </tr>
             <tr>
-                        <td><a href="./docs/1/#box-10-01-04">10-01-04</a></td>
-                <td></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td>1</td>
-                <td>Make the body pose animation more creative</td>
+                <td></td>
+                <td>objects created for this assignment 1, not trivial, can be identified in world (need explanation)</td>
             </tr>
             <tr>
-                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td>1</td>
                 <td></td>
-                <td>The default simulation settings should be numerically stable</td>
+                <td>objects created for this assignment 2, not trivial, can be identified in world (need explanation)</td>
             </tr>
             <tr>
-                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td>1</td>
                 <td></td>
-                <td>Include UI controls for interactivity</td>
+                <td>5 more kinds of objects 1, not trivial, can identify (need explanation)</td>
             </tr>
             <tr>
-                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td>1</td>
                 <td></td>
-                <td>Implement a more stable integration method</td>
+                <td>5 more kinds of objects 2, not trivial, can identify (need explanation)</td>
             </tr>
             <tr>
-                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td>1</td>
                 <td></td>
-                <td>Implement a drag (air resistance) force, with parameters adjustable through the UI.</td>
+                <td>5 more kinds of objects 3, not trivial, can identify (need explanation)</td>
             </tr>
             <tr>
-                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td>1</td>
                 <td></td>
-                <td>Convert the cloth into a triangular mesh for rendering</td>
+                <td>5 more kinds of objects 4, not trivial, can identify (need explanation)</td>
             </tr>
             <tr>
-                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
-                <td></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td>1</td>
-                <td>The simulation should show dynamic motion</td>
+                <td></td>
+                <td>5 more kinds of objects 5, not trivial, can identify (need explanation)</td>
             </tr>
             <tr>
-                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
-                <td></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td>1</td>
-                <td>Implement shear and bending springs, and add a wireframe view option in the UI to visually show different spring connections</td>
+                <td></td>
+                <td>has building, natural, vehicle (need explanation)</td>
             </tr>
             <tr>
-                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
-                <td></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td>1</td>
-                <td>Add texture mapping to the cloth surface</td>
+                <td></td>
+                <td>loaded model (need explanation)</td>
             </tr>
             <tr>
-                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
-                <td></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td>1</td>
-                <td>Implement collision with an object</td>
+                <td></td>
+                <td>shader: identifiable and not trivial (need explanation)</td>
             </tr>
             <tr>
-                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td>1</td>
+                <td></td>
+                <td>three behaviors you made 1, not trivial, can be identified in scene (need explanation)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td>1</td>
+                <td></td>
+                <td>three behaviors you made 2, not trivial, can be identified in scene (need explanation)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td>1</td>
+                <td></td>
+                <td>three behaviors you made 3, not trivial, can be identified in scene (need explanation)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td>1</td>
+                <td></td>
+                <td>at least one object is rideable / followable</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td>1</td>
+                <td></td>
+                <td>behavior that is not simple (need explanation)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td>1</td>
+                <td></td>
+                <td>articulated figure (need explanation)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
                 <td></td>
                 <td>1</td>
-                <td>Introduce technically challenging and visually noticeable features</td>
+                <td>advanced thing 1: has a challenge type (need the name and number from the list)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td></td>
+                <td>1</td>
+                <td>advanced thing 1: works properly, can be identified in the town (need explanation)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td></td>
+                <td>1</td>
+                <td>advanced thing 1: points above and beyond (need explanation)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td></td>
+                <td>1</td>
+                <td>advanced thing 2: has a challenge type (need the name and number from the list)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td></td>
+                <td>1</td>
+                <td>advanced thing 2: works properly, can be identified in the town (need explanation)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td></td>
+                <td>1</td>
+                <td>advanced thing 2: points above and beyond (need explanation)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td></td>
+                <td>1</td>
+                <td>advanced thing 3: has a challenge type (need the name and number from the list)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td></td>
+                <td>1</td>
+                <td>advanced thing 3: works properly, can be identified in the town (need explanation)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td></td>
+                <td>1</td>
+                <td>advanced thing 3: points above and beyond (need explanation)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td></td>
+                <td>1</td>
+                <td>advanced thing 4: has a challenge type (need the name and number from the list)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td></td>
+                <td>1</td>
+                <td>advanced thing 4: works properly, can be identified in the town (need explanation)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td></td>
+                <td>1</td>
+                <td>advanced thing 4: points above and beyond (need explanation)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td></td>
+                <td>1</td>
+                <td>advanced thing 5: has a challenge type (need the name and number from the list)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td></td>
+                <td>1</td>
+                <td>advanced thing 5: works properly, can be identified in the town (need explanation)</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-gr-01-01">gr-01-01</a></td>
+                <td></td>
+                <td>1</td>
+                <td>advanced thing 5: points above and beyond (need explanation)</td>
             </tr>
         </tbody>
     </table>
 </details>
 </div>
-<h2 id="get-started">Get Started</h2>
-<p>Everything begins on <a href="./docs/1/">Page &nbsp;1&nbsp; (Pose Detection and Animation)</a>.</p>
+<p>Get Started on <a href="./docs/1/">Page &nbsp;1&nbsp; (Graphics Town)</a>!</p>
 
         
 	</div>
@@ -168,12 +301,15 @@
 
                 </div>
                     <div class="sidebar">
-<h2 class="Side_Title">Workbook 10: Advanced Topics</h2>
+<h2 class="Side_Title">Workbook 12: Graphics Town</h2>
 <p class="Side__Note">Pages:</p>
 <ul class="Side__List">
-    <li class="Side__Item Side__Selected">Index (Advanced Topics) </li>
-        <li class="Side__Item Side__Unselected"> <a href="./docs/1/">1: Pose Detection and Animation </a></li>
-        <li class="Side__Item Side__Unselected"> <a href="./docs/2/">2: Cloth Simulation </a></li>
+    <li class="Side__Item Side__Selected">Index (Workbook Final: Graphics Town) </li>
+        <li class="Side__Item Side__Unselected"> <a href="./docs/1/">1: Graphics Town </a></li>
+        <li class="Side__Item Side__Unselected"> <a href="./docs/2/">2: Graphics Town Overview </a></li>
+        <li class="Side__Item Side__Unselected"> <a href="./docs/3/">3: Graphics Town Hints </a></li>
+        <li class="Side__Item Side__Unselected"> <a href="./docs/4/">4: Graphics Town Rubric </a></li>
+        <li class="Side__Item Side__Unselected"> <a href="./docs/5/">5: Graphics Town Advanced Things </a></li>
 </ul>
 </div>
 </div>

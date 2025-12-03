@@ -1,0 +1,291 @@
+import * as T from "../libs/CS559-Three/build/three.module.js";
+
+const directionalLightColor = new T.Vector3(1.8, 1.7, 1.6).multiplyScalar(0.8);
+const ambientLight = new T.Vector3(0.2, 0.2, 0.2);
+const directionalLightDir = new T.Vector3(0.7, 0.5, 0.3).normalize();
+
+export function createArtDecoMaterial(fogParams = {}) {
+  const fogColor = fogParams.color || new T.Color(0xffffff);
+  const fogNear = fogParams.near !== undefined ? fogParams.near : 0;
+  const fogFar = fogParams.far !== undefined ? fogParams.far : 8;
+
+  const vertexShader = `
+    varying vec2 vUv;
+    varying vec3 vWorldPosition;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+
+    void main() {
+      vUv = uv;
+      vNormal = normalMatrix * normal;
+      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+      vWorldPosition = worldPosition.xyz;
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      vViewPosition = -mvPosition.xyz;
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  `;
+
+  const fragmentShader = `
+    uniform vec3 fogColor;
+    uniform float fogNear;
+    uniform float fogFar;
+    uniform vec3 ambientLight;
+    uniform vec3 directionalLightDir;
+    uniform vec3 directionalLightColor;
+
+    varying vec2 vUv;
+    varying vec3 vWorldPosition;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+
+    // Antialiased stripe pattern
+    vec2 integral(vec2 x, vec2 width) {
+        vec2 h = fract(x * 0.5) - vec2(0.5);
+        return (vec2(1.0) - 2.0 * abs(h)) / width;
+    }
+
+    float smooth_lines(vec2 uv, vec2 width) {
+        vec2 a = uv - width / 2.0;
+        vec2 b = uv + width / 2.0;
+        vec2 integral = integral(a, width) - integral(b, width);
+        return 0.5 - 0.5 * integral.x;
+    }
+
+    void main() {
+      // Calculate stripe pattern
+      vec2 scaled = vUv * 5.0;
+      float stripePattern = smooth_lines(scaled, fwidth(scaled));
+
+      // Dark stone color for background
+      vec3 darkStone = vec3(0.16, 0.38, 0.44);
+      // Gold/brass color for stripes
+      vec3 goldColor = vec3(0.75, 0.56, 0.294);
+
+      // Different shininess for stripes vs stone
+      float stripeShininess = 8.0;  // Shiny stripes
+      float stoneShininess = 4.0;    // Matte stone
+
+      // Mix materials based on stripe pattern
+      vec3 diffuseColor = mix(goldColor, darkStone, stripePattern);
+      float shininess = mix(stripeShininess, stoneShininess, stripePattern);
+
+      // Normalize the normal
+      vec3 N = normalize(vNormal);
+
+      // Ambient component
+      vec3 ambient = ambientLight * diffuseColor;
+
+      // Directional light - diffuse component
+      vec3 L = normalize(directionalLightDir);
+      float NdotL = max(dot(N, L), 0.0);
+      vec3 diffuse = directionalLightColor * diffuseColor * NdotL;
+
+      // Specular component (Blinn-Phong)
+      vec3 V = normalize(vViewPosition);
+      vec3 H = normalize(L + V);
+      float NdotH = max(dot(N, H), 0.0);
+      float specularStrength = pow(NdotH, shininess);
+
+      // Specular color (white for stripes, darker for stone)
+      vec3 specularColor = mix(vec3(1.0), vec3(0.1), stripePattern);
+      vec3 specular = directionalLightColor * specularColor * specularStrength * 0.5;
+
+      // Combine lighting
+      vec3 color = ambient + diffuse + specular;
+
+      gl_FragColor = vec4(color, 1.0);
+
+      // Height-based fog calculation
+      float fogHeight = vWorldPosition.y;
+      float fogFactor = smoothstep(fogNear, fogFar, fogHeight);
+      gl_FragColor.rgb = mix(fogColor, gl_FragColor.rgb, fogFactor);
+    }
+  `;
+
+  const uniforms = {
+    fogColor: { value: fogColor },
+    fogNear: { value: fogNear },
+    fogFar: { value: fogFar },
+    ambientLight: { value: ambientLight },
+    directionalLightDir: { value: directionalLightDir },
+    directionalLightColor: { value: directionalLightColor },
+  };
+
+  return new T.ShaderMaterial({
+    vertexShader: vertexShader,
+    fragmentShader: fragmentShader,
+    uniforms: uniforms,
+  });
+}
+
+export function createBronzeMaterial(fogParams = {}) {
+  const fogColor = fogParams.color || new T.Color(0xffffff);
+  const fogNear = fogParams.near !== undefined ? fogParams.near : 0;
+  const fogFar = fogParams.far !== undefined ? fogParams.far : 8;
+
+  const vertexShader = `
+    varying vec3 vWorldPosition;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+
+    void main() {
+      vNormal = normalMatrix * normal;
+      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+      vWorldPosition = worldPosition.xyz;
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      vViewPosition = -mvPosition.xyz;
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  `;
+
+  const fragmentShader = `
+    uniform vec3 fogColor;
+    uniform float fogNear;
+    uniform float fogFar;
+    uniform vec3 ambientLight;
+    uniform vec3 directionalLightDir;
+    uniform vec3 directionalLightColor;
+    uniform vec3 bronzeColor;
+    uniform float shininess;
+
+    varying vec3 vWorldPosition;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+
+    void main() {
+      // Normalize the normal
+      vec3 N = normalize(vNormal);
+
+      // Ambient component
+      vec3 ambient = ambientLight * bronzeColor;
+
+      // Directional light - diffuse component
+      vec3 L = normalize(directionalLightDir);
+      float NdotL = max(dot(N, L), 0.0);
+      vec3 diffuse = directionalLightColor * bronzeColor * NdotL;
+
+      // Specular component (Blinn-Phong)
+      vec3 V = normalize(vViewPosition);
+      vec3 H = normalize(L + V);
+      float NdotH = max(dot(N, H), 0.0);
+      float specularStrength = pow(NdotH, shininess);
+
+      // Bronze has a warm specular highlight
+      vec3 specularColor = vec3(0.9, 0.8, 0.6);
+      vec3 specular = directionalLightColor * specularColor * specularStrength * 0.6;
+
+      // Combine lighting
+      vec3 color = ambient + diffuse + specular;
+
+      gl_FragColor = vec4(color, 1.0);
+
+      // Height-based fog calculation
+      float fogHeight = vWorldPosition.y;
+      float fogFactor = smoothstep(fogNear, fogFar, fogHeight);
+      gl_FragColor.rgb = mix(fogColor, gl_FragColor.rgb, fogFactor);
+    }
+  `;
+
+  const uniforms = {
+    fogColor: { value: fogColor },
+    fogNear: { value: fogNear },
+    fogFar: { value: fogFar },
+    ambientLight: { value: ambientLight },
+    directionalLightDir: { value: directionalLightDir },
+    directionalLightColor: { value: directionalLightColor },
+    bronzeColor: { value: new T.Color(0.55, 0.42, 0.25) },
+    shininess: { value: 8.0 },
+  };
+
+  return new T.ShaderMaterial({
+    vertexShader: vertexShader,
+    fragmentShader: fragmentShader,
+    uniforms: uniforms,
+  });
+}
+
+export function createCreamStoneMaterial(fogParams = {}) {
+  const fogColor = fogParams.color || new T.Color(0xffffff);
+  const fogNear = fogParams.near !== undefined ? fogParams.near : 0;
+  const fogFar = fogParams.far !== undefined ? fogParams.far : 8;
+
+  const vertexShader = `
+    varying vec3 vWorldPosition;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+
+    void main() {
+      vNormal = normalMatrix * normal;
+      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+      vWorldPosition = worldPosition.xyz;
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      vViewPosition = -mvPosition.xyz;
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  `;
+
+  const fragmentShader = `
+    uniform vec3 fogColor;
+    uniform float fogNear;
+    uniform float fogFar;
+    uniform vec3 ambientLight;
+    uniform vec3 directionalLightDir;
+    uniform vec3 directionalLightColor;
+    uniform vec3 stoneColor;
+    uniform float shininess;
+
+    varying vec3 vWorldPosition;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+
+    void main() {
+      // Normalize the normal
+      vec3 N = normalize(vNormal);
+
+      // Ambient component
+      vec3 ambient = ambientLight * stoneColor;
+
+      // Directional light - diffuse component
+      vec3 L = normalize(directionalLightDir);
+      float NdotL = max(dot(N, L), 0.0);
+      vec3 diffuse = directionalLightColor * stoneColor * NdotL;
+
+      // Specular component (Blinn-Phong) - very subtle for stone
+      vec3 V = normalize(vViewPosition);
+      vec3 H = normalize(L + V);
+      float NdotH = max(dot(N, H), 0.0);
+      float specularStrength = pow(NdotH, shininess);
+
+      // Stone has minimal specular
+      vec3 specular = directionalLightColor * vec3(1.0) * specularStrength * 0.1;
+
+      // Combine lighting
+      vec3 color = ambient + diffuse + specular;
+
+      gl_FragColor = vec4(color, 1.0);
+
+      // Height-based fog calculation
+      float fogHeight = vWorldPosition.y;
+      float fogFactor = smoothstep(fogNear, fogFar, fogHeight);
+      gl_FragColor.rgb = mix(fogColor, gl_FragColor.rgb, fogFactor);
+    }
+  `;
+
+  const uniforms = {
+    fogColor: { value: fogColor },
+    fogNear: { value: fogNear },
+    fogFar: { value: fogFar },
+    ambientLight: { value: ambientLight },
+    directionalLightDir: { value: directionalLightDir },
+    directionalLightColor: { value: directionalLightColor },
+    stoneColor: { value: new T.Color(0.811, 0.745, 0.64) },
+    shininess: { value: 8.0 },
+  };
+
+  return new T.ShaderMaterial({
+    vertexShader: vertexShader,
+    fragmentShader: fragmentShader,
+    uniforms: uniforms,
+  });
+}

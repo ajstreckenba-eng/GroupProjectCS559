@@ -14,272 +14,42 @@
         <div class="container container--outer"><div class="maincolumn">
 <main class="main" role="main">
 	<article class="post">
-		<header class="post__header"><h1 class="post__title">Page 2: Cloth Simulation</h1>
+		<header class="post__header"><h1 class="post__title">Page 2: Graphics Town Overview</h1>
 		</header>
-		<div class="content post__content clearfix"><p>In this page, we’re going to learn how to create a simple <strong>cloth simulator</strong> using <strong>THREE.js</strong> and the <strong>CS559 framework</strong>. We’ll start from the basics and build things up step by step.</p>
-<p>Here’s what we’ll cover:</p>
-<ul>
-<li><strong>Modeling cloth with a mass–spring system</strong>: how to represent cloth as particles and springs (spatial discretization).</li>
-<li><strong>Simulating motion over time</strong>: how to update the cloth step by step so it moves naturally (temporal discretization).</li>
-<li><strong>Numerical issues</strong>: what can go wrong (like instability or stretching) and how to address these problems.</li>
-<li><strong>Making it realistic</strong>: adding details so the cloth looks and behaves more like the real thing.</li>
-</ul>
-<p>By the end, you’ll have your very own cloth simulation running in the browser — and a better understanding of how physics-based simulation works in computer graphics.</p>
-<p>(If you need a bit of convincing about why cloth simulation matters, check out this <a href="https://www.youtube.com/watch?v=15urCMoUmHQ"><strong>Virtual Runway demo</strong></a>. It shows how realistic cloth movement can bring graphics and animation to life.)</p>
-<hr>
-<h2 id="modeling-cloth-with-a-massspring-system">Modeling Cloth with a Mass–Spring System</h2>
-<p>When building a cloth simulation, the first question you might ask is:</p>
-<p><strong>“How can we represent cloth in a computer so that it makes sense to the program?”</strong></p>
-<p>The key difference between cloth and the rigid objects we’ve dealt with so far is that cloth <strong>cannot be represented by a single transformation matrix</strong>. For rigid objects, the relative positions of vertices never change, so storing one matrix for translation, rotation, and scaling is sufficient.</p>
-<p>Cloth, however, behaves differently. The relative positions between its particles change over time because it <strong>deforms</strong>. That means we need to track the position of every vertex individually and compute the forces acting on each one.</p>
-<p>One of the simplest and most intuitive ways to model this behavior is with a <strong>mass–spring system</strong>, as shown below:</p>
-<figure><img src="../../docs/2/mass_spring.png"
-    alt="Mass–Spring model" width="400">
-</figure>
-
-<p>In this tutorial, we’ll represent cloth as a mass–spring model, where each mass point is connected to its neighbors by springs. These springs follow <strong>Hooke’s law</strong>, which states that the force of a spring is proportional to how much it is stretched or compressed:</p>
-<span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>F</mi><mo>=</mo><mo>−</mo><mi>k</mi><mo stretchy="false">(</mo><mi>x</mi><mo>−</mo><msub><mi>x</mi><mn>0</mn></msub><mo stretchy="false">)</mo><mi>d</mi></mrow><annotation encoding="application/x-tex">F = -k (x - x_0) d</annotation></semantics></math></span>
-<ul>
-<li><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi></mrow><annotation encoding="application/x-tex">k</annotation></semantics></math></span>: spring stiffness constant</li>
-<li><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi><mo>−</mo><msub><mi>x</mi><mn>0</mn></msub></mrow><annotation encoding="application/x-tex">x - x_0</annotation></semantics></math></span>: amount of stretch or compression (current length – rest length)</li>
-<li><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi></mrow><annotation encoding="application/x-tex">d</annotation></semantics></math></span>: unit vector pointing from one mass point to the other</li>
-</ul>
-<p>For more details on the physics, see <a href="https://en.wikipedia.org/wiki/Hooke%27s_law">Hooke’s law</a>.</p>
-<hr>
-<h2 id="time-integration">Time Integration</h2>
-<p>In the previous section, we learned how to model cloth with a data structure that the computer can understand — a process called <strong>spatial discretization</strong>. Now, we need to think about <strong>time discretization</strong>: how to update the system step by step over time.</p>
-<p>In other words:</p>
-<p><strong>“If we know the current positions and velocities of the mass points, how can we determine their positions in the next moment?”</strong></p>
-<h3 id="explicit-euler-integration">Explicit Euler Integration</h3>
-<p>One of the simplest approaches is the <strong>Explicit Euler method</strong>. The idea is straightforward:</p>
-<ol>
-<li>
-<p>Compute acceleration using <a href="https://en.wikipedia.org/wiki/Newton%27s_laws_of_motion">Newton’s second law</a>:</p>
-<span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>a</mi><mi>t</mi></msub><mo>=</mo><msub><mi>F</mi><mi>t</mi></msub><mi mathvariant="normal">/</mi><mi>m</mi></mrow><annotation encoding="application/x-tex">a_t = F_t / m</annotation></semantics></math></span>
-</li>
-<li>
-<p>Update velocity:</p>
-<span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>v</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>=</mo><msub><mi>v</mi><mi>t</mi></msub><mo>+</mo><msub><mi>a</mi><mi>t</mi></msub><mi mathvariant="normal">Δ</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">v_{t+1} = v_t + a_t Δt</annotation></semantics></math></span>
-</li>
-<li>
-<p>Update position:</p>
-<span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>x</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>=</mo><msub><mi>x</mi><mi>t</mi></msub><mo>+</mo><msub><mi>v</mi><mi>t</mi></msub><mi mathvariant="normal">Δ</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">x_{t+1} = x_t + v_t Δt</annotation></semantics></math></span>
-</li>
-</ol>
-<p>Now, we have all the core components needed to build a basic cloth simulation!</p>
-<hr>
-<h2 id="simple-massspring-simulation">Simple Mass–Spring Simulation</h2>
- 
-
-
-<p>Let’s start with a simple mass–spring simulation. Please read 
-<a href="../../for_students/10-02-01.js" class="box-html" data-tag="cl-01-01">10-02-01.js</a>
-, which implements a single mass–spring system.<br>
-In this code, the <code>stepWorld</code> function performs time integration: it calculates spring forces using Hooke’s law, computes acceleration, updates velocity, and finally determines the next position of the mass point. The code is short, so you should be able to follow it easily.</p>
-
-<div id="box-10-02-01" style="border: 2px solid black; padding: 0px 5px 0px 5px; margin: 0;border-radius: 5px;">
-    <b>Box 10-02-01</b>&nbsp;&nbsp;
-        <a href=../../for_students/10-02-01.html class="boxtitlelink">10-02-01.html</a>
-        &nbsp;&nbsp;<a href="../../for_students/10-02-01.js" class="boxtitlelink">10-02-01.js</a>
-    <iframe
-        title="cl-01-01"
-        src="../../for_students/10-02-01.html"
-        class="includebox includebox-standard"
-        width="100%"
-        height="100%"
-        scrolling="no"
-        frameborder="0"
-        id="box-iframe-10-02-01"
-    ></iframe>
-</div>
-<p>Try increasing the timestep or the spring constant. You’ll notice the simulation becomes inaccurate and eventually blows up (values go to <code>NaN</code>).<br>
-Is this a bug in our code? Fortunately (or unfortunately), it isn’t. The instability comes from numerical errors in the time integration method. Since Explicit Euler updates positions and velocities using only the current state, errors accumulate over time, leading to increasingly large spring forces and eventual instability.</p>
-<p>Things get worse in more complex systems:</p>
-<p> 
-
-
-
-<div id="box-10-02-02" style="border: 2px solid black; padding: 0px 5px 0px 5px; margin: 0;border-radius: 5px;">
-    <b>Box 10-02-02</b>&nbsp;&nbsp;
-        <a href=../../for_students/10-02-02.html class="boxtitlelink">10-02-02.html</a>
-        &nbsp;&nbsp;<a href="../../for_students/10-02-02.js" class="boxtitlelink">10-02-02.js</a>
-    <iframe
-        title="cl-01-02"
-        src="../../for_students/10-02-02.html"
-        class="includebox includebox-standard"
-        width="100%"
-        height="100%"
-        scrolling="no"
-        frameborder="0"
-        id="box-iframe-10-02-02"
-    ></iframe>
-</div></p>
-<p>In 
-<a href="../../for_students/10-02-02.js" class="box-html" data-tag="cl-01-02">10-02-02.js</a>
-, which implements four connected mass–spring points, try running the same settings with <code>timestep = 0.03</code> in both 
-<a href="../../for_students/10-02-01.js" class="box-html" data-tag="cl-01-01">10-02-01.js</a>
- (single spring) and 
-<a href="../../for_students/10-02-02.js" class="box-html" data-tag="cl-01-02">10-02-02.js</a>
- (four springs). You’ll see that while the single spring might remain stable, the four-spring system blows up. This shows that larger systems with more springs are much more susceptible to instability.</p>
-<p>Simulation code can be tricky — when something goes wrong, it’s often hard to tell whether it’s a bug or numerical instability. To handle this, always start with simple scenarios and mild settings (small timestep, low spring stiffness), and include code that checks for <code>NaN</code> values (<code>NaN</code> means “Not a Number”). You can find <code>NaN</code> detection code inside the <code>stepWorld</code> function.</p>
-<p>In the next example, you can experiment with higher-resolution cloth and observe how instability increases with more mass points, stiffer springs, or stronger gravity:</p>
-<p> 
-
-
-
-<div id="box-10-02-03" style="border: 2px solid black; padding: 0px 5px 0px 5px; margin: 0;border-radius: 5px;">
-    <b>Box 10-02-03</b>&nbsp;&nbsp;
-        <a href=../../for_students/10-02-03.html class="boxtitlelink">10-02-03.html</a>
-        &nbsp;&nbsp;<a href="../../for_students/10-02-03.js" class="boxtitlelink">10-02-03.js</a>
-    <iframe
-        title="cl-01-03"
-        src="../../for_students/10-02-03.html"
-        class="includebox includebox-standard"
-        width="100%"
-        height="100%"
-        scrolling="no"
-        frameborder="0"
-        id="box-iframe-10-02-03"
-    ></iframe>
-</div></p>
-<p>The UI also includes a <strong>“damping” slider</strong>. Damping helps reduce instability by scaling down velocity each timestep:</p>
-<p><code>mass.velocity.multiplyScalar(damping);</code></p>
-<p>You’ll notice that higher damping (smaller damping factor) makes the simulation more stable. However, this damping is not physically realistic — it doesn’t follow any real-world physics. If the damping is too strong, the motion freezes; if it’s too weak, the system becomes unstable.</p>
-<p>In the next section, you will learn how to make the simulation more stable in a physically accurate way.</p>
-<hr>
-<h2 id="toward-more-stable-and-realistic-simulation">Toward More Stable and Realistic Simulation</h2>
-<p>Our simulator (
-<a href="../../for_students/10-02-03.js" class="box-html" data-tag="cl-01-03">10-02-03.js</a>
-) works, but it’s far from realistic. It’s either unstable or static due to excessive damping. In this section, we’ll add new features to improve both realism and stability.</p>
-<h3 id="1-realistic-damping">1. Realistic Damping</h3>
-<p>Previously, we used a non-physical damping term. In reality, drag force is proportional to the square of velocity:</p>
-<span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>F</mi><mrow><mi>d</mi><mi>r</mi><mi>a</mi><mi>g</mi></mrow></msub><mo>=</mo><mo>−</mo><mi>c</mi><mi mathvariant="normal">∣</mi><mi>v</mi><mi mathvariant="normal">∣</mi><mi>v</mi></mrow><annotation encoding="application/x-tex">F_{drag} = -c |v| v</annotation></semantics></math></span>
-<p>Here, <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>c</mi></mrow><annotation encoding="application/x-tex">c</annotation></semantics></math></span> is the drag coefficient. This force slows particles down in a way that resembles air resistance. The total acceleration becomes:</p>
-<span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>a</mi><mo>=</mo><mo stretchy="false">(</mo><msub><mi>F</mi><mrow><mi>s</mi><mi>p</mi><mi>r</mi><mi>i</mi><mi>n</mi><mi>g</mi></mrow></msub><mo>+</mo><msub><mi>F</mi><mrow><mi>g</mi><mi>r</mi><mi>a</mi><mi>v</mi><mi>i</mi><mi>t</mi><mi>y</mi></mrow></msub><mo>+</mo><msub><mi>F</mi><mrow><mi>d</mi><mi>r</mi><mi>a</mi><mi>g</mi></mrow></msub><mo stretchy="false">)</mo><mi mathvariant="normal">/</mi><mi>m</mi></mrow><annotation encoding="application/x-tex">a = (F_{spring} + F_{gravity} + F_{drag}) / m</annotation></semantics></math></span>
-<p>Unlike artificial damping, this model is physically realistic. Because it scales with velocity, it applies stronger damping only when particles move faster — keeping motion lively and natural.</p>
-<h3 id="2-more-stable-integration">2. More Stable Integration</h3>
-<p>Previously, our <strong>Explicit Euler</strong> integration updated blindly using only the current values:</p>
-<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>v</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>=</mo><msub><mi>v</mi><mi>t</mi></msub><mo>+</mo><msub><mi>a</mi><mi>t</mi></msub><mi mathvariant="normal">Δ</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">v_{t+1} = v_t + a_t Δt</annotation></semantics></math></span><br>
-<span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>x</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>=</mo><msub><mi>x</mi><mi>t</mi></msub><mo>+</mo><msub><mi>v</mi><mi>t</mi></msub><mi mathvariant="normal">Δ</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">x_{t+1} = x_t + v_t Δt</annotation></semantics></math></span></p>
-<p>What if we try updating with <strong>future values</strong> instead?</p>
-<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>v</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>=</mo><msub><mi>v</mi><mi>t</mi></msub><mo>+</mo><msub><mi>a</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mi mathvariant="normal">Δ</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">v_{t+1} = v_t + a_{t+1} Δt</annotation></semantics></math></span><br>
-<span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>x</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>=</mo><msub><mi>x</mi><mi>t</mi></msub><mo>+</mo><msub><mi>v</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mi mathvariant="normal">Δ</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">x_{t+1} = x_t + v_{t+1} Δt</annotation></semantics></math></span></p>
-<p>Here, <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>a</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub></mrow><annotation encoding="application/x-tex">a_{t+1}</annotation></semantics></math></span> depends on the unknown future state.<br>
-To compute this, we need to solve a <strong>nonlinear equation</strong>, for example:</p>
-<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>m</mi><mo stretchy="false">(</mo><msub><mi>v</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>−</mo><msub><mi>v</mi><mi>t</mi></msub><mo stretchy="false">)</mo><mi mathvariant="normal">/</mi><mi mathvariant="normal">Δ</mi><mi>t</mi><mo>=</mo><mi>F</mi><mo stretchy="false">(</mo><msub><mi>x</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mo separator="true">,</mo><msub><mi>v</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">m (v_{t+1} - v_t) / Δt = F(x_{t+1}, v_{t+1})</annotation></semantics></math></span><br>
-<span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>x</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>=</mo><msub><mi>x</mi><mi>t</mi></msub><mo>+</mo><msub><mi>v</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mi mathvariant="normal">Δ</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">x_{t+1} = x_t + v_{t+1} Δt</annotation></semantics></math></span></p>
-<p>By substituting the second equation into the first, we end up with a <strong>root-finding problem</strong> in terms of <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>x</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub></mrow><annotation encoding="application/x-tex">x_{t+1}</annotation></semantics></math></span>.<br>
-This is the <strong>Implicit Euler integration scheme</strong>.</p>
-<p>The benefit is that it’s extremely stable — instead of letting errors grow, it tends to damp them out over time.<br>
-The downside is that each timestep requires solving a nonlinear equation, which is computationally expensive.<br>
-Still, implicit schemes are the <strong>industry standard</strong> — as you saw in the Virtual Runway video, most state-of-the-art cloth simulation systems and commercial software rely on them.</p>
-<p>Since solving nonlinear equations is a deeper topic (if you’re interested, check out a <em>Numerical Analysis</em> course at UW–Madison), we won’t go into it here.<br>
-Instead, we’ll look at an integration scheme that lies between explicit and implicit methods.</p>
-<p>It’s called the <strong>Symplectic Euler (Semi-Implicit Euler)</strong> scheme.<br>
-It uses the current acceleration to update velocity, and then uses the updated velocity to compute the next position:</p>
-<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>v</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>=</mo><msub><mi>v</mi><mi>t</mi></msub><mo>+</mo><msub><mi>a</mi><mi>t</mi></msub><mi mathvariant="normal">Δ</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">v_{t+1} = v_t + a_t Δt</annotation></semantics></math></span><br>
-<span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>x</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>=</mo><msub><mi>x</mi><mi>t</mi></msub><mo>+</mo><msub><mi>v</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mi mathvariant="normal">Δ</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">x_{t+1} = x_t + v_{t+1} Δt</annotation></semantics></math></span></p>
-<p>This small change makes the simulation much more stable than the explicit Euler scheme, while still keeping the implementation simple.</p>
-<p>(Other integration schemes, such as <a href="https://en.wikipedia.org/wiki/Verlet_integration">Verlet integration</a>, are also simple to implement and help improve stability.)</p>
-<h3 id="3-additional-spring-types">3. Additional Spring Types</h3>
-<p>So far, we have only used <strong>structural springs</strong>, which makes the simulation look more like a net than actual cloth. To improve realism, we can add other types of springs, as shown below:</p>
-<figure><img src="../../docs/2/spring_types.png"
-    alt="Three spring types" width="600">
-</figure>
-
-<ul>
-<li><strong>Shear springs</strong>: connect diagonal neighbors to prevent the cloth from collapsing into parallelogram shapes.</li>
-<li><strong>Bending springs</strong>: connect vertices two steps apart, adding resistance to folding and floppiness.</li>
-</ul>
-<p>Implementing these springs results in much more natural-looking motion.</p>
-<h3 id="4-meshing-the-cloth">4. Meshing the Cloth</h3>
-<p>Up to this point, our cloth (
-<a href="../../for_students/10-02-03.js" class="box-html" data-tag="cl-01-03">10-02-03.js</a>
-) has existed only as a grid of particles connected by springs. To visualize it as real cloth, we need to <strong>convert this grid into a triangular mesh</strong> that can be rendered. Each particle becomes a vertex, and every small square of four neighboring points is divided into two triangles. By connecting all the points this way, we form a smooth rectangular surface — the standard representation used by rendering engines like THREE.js.</p>
-<p>If you complete meshing the cloth, you can also try <strong>adding texture</strong>. For texturing, you have to manually map each mass point to texture coordinates (UVs).</p>
-<p>Now, let’s create your own cloth simulator!</p>
-<p> 
-
-
-
-<div id="box-10-02-04" style="border: 2px solid black; padding: 0px 5px 0px 5px; margin: 0;border-radius: 5px;">
-    <b>Box 10-02-04</b>&nbsp;
-        (5 basic + 5 advanced)&nbsp&nbsp;
-        <a href=../../for_students/10-02-04.html class="boxtitlelink">10-02-04.html</a>
-        &nbsp;&nbsp;<a href="../../for_students/10-02-04.js" class="boxtitlelink">10-02-04.js</a>
-    <iframe
-        title="cl-01-04"
-        src="../../for_students/10-02-04.html"
-        class="includebox includebox-standard"
-        width="100%"
-        height="100%"
-        scrolling="no"
-        frameborder="0"
-        id="box-iframe-10-02-04"
-    ></iframe>
-</div></p>
-<p>Implement the concepts discussed so far in 
-<a href="../../for_students/10-02-04.js" class="box-html" data-tag="cl-01-04">10-02-04.js</a>
-.<br>
-If you successfully complete this step, your cloth should appear both stable and realistic. You are also encouraged to add your own improvements to make the simulation more dynamic and visually appealing.</p>
-<p>Below are the requirements for this exercise.</p>
-<h3 id="basic-items">Basic Items</h3>
-<h4 id="10-02-04">10-02-04</h4>
-<ol>
-<li>The default simulation settings should be <strong>numerically stable</strong>.</li>
-<li>Include <strong>UI controls</strong> for interactivity (e.g., moving or adjusting cloth corners through the interface).</li>
-<li>Implement a <strong>more stable integration method</strong> such as <em>Symplectic Euler</em> or <em>Verlet integration</em>.</li>
-<li>Implement a <strong>drag (air resistance)</strong> force, with parameters adjustable through the UI.</li>
-<li>Convert the cloth into a <strong>triangular mesh</strong> for rendering.</li>
-</ol>
-<h3 id="advanced-items">Advanced Items</h3>
-<h4 id="10-02-04-1">10-02-04</h4>
-<ol>
-<li>The simulation should show <strong>dynamic motion</strong> (e.g., fluttering in the wind). Be creative with your scenario!</li>
-<li>Implement <strong>shear and bending springs</strong>, and add a <strong>wireframe view option</strong> in the UI to visually show different spring connections.</li>
-<li>Add <strong>texture mapping</strong> to the cloth surface.</li>
-<li>Implement <strong>collision</strong> with an object (e.g., a sphere).</li>
-<li>Introduce <strong>technically challenging and visually noticeable features</strong>, such as:
-<ul>
-<li>self-collision (collision between cloth particles and springs)</li>
-<li>collision with complex objects or meshes</li>
-<li>tearing effects</li>
-<li>or other creative extensions</li>
-</ul>
-</li>
-</ol>
-
-
-<div class="">
-<details class="myexpand" >
-    <summary class="myexpand-head">Hints</summary>
-    <div class="markdown-inner myexpand-content">
-      <p>To handle collisions, we usually need two steps: <strong>detection</strong> and <strong>resolution</strong>.</p>
-<ol>
-<li>
-<p><strong>Collision Detection</strong><br>
-In general, there are two types: <em>mass point (vertex) vs. object</em> and <em>spring (line segment) vs. object</em>.<br>
-For this exercise, detecting <strong>mass point vs. object</strong> collisions is sufficient. When the object has a simple analytic shape (like a <strong>sphere</strong> or a <strong>plane</strong>), detection is easy — you can simply check the distance from each mass point to the object surface.</p>
-</li>
-<li>
-<p><strong>Collision Resolution</strong><br>
-Once a collision is detected, we need to push the mass point back to the surface. A common approach is to apply a <strong>penalty force</strong> proportional to the <strong>penetration depth</strong> (how far the mass has gone inside the object). This creates a restoring force that prevents the cloth from passing through.</p>
-</li>
-</ol>
-<p>For more complex collisions, for example between the cloth and an arbitrary mesh, you would need to test <strong>each triangle</strong> of the mesh against the cloth particles or springs. This is computationally more expensive but necessary for precise simulation in advanced systems.</p>
-
-    </div>
-</details>
-</div>
-<hr>
-<h2 id="advanced-references">Advanced References</h2>
-<p>If you’d like to learn more about physics-based simulation, check out these resources:</p>
-<ul>
-<li><a href="https://phys-sim-book.github.io/"><strong>Physics-Based Simulation</strong></a>: A comprehensive and up-to-date tutorial series on physics-based simulation.</li>
-<li><a href="https://www.cs.cmu.edu/~baraff/papers/sig98.pdf"><strong>Large Steps in Cloth Simulation</strong></a>: The first stable cloth simulation paper (implicit integration). This paper explains how to solve nonlinear equations arising from implicit integration.</li>
-<li><a href="https://www.physicsbasedanimation.com/resources-courses/"><strong>Physics-Based Animation Blog by Christopher Batty</strong></a>: Modern research and tutorials on simulation in graphics.</li>
-<li><a href="https://www.amazon.com/Real-Time-Collision-Detection-Interactive-Technology/dp/1558607323"><strong>Real-Time Collision Detection</strong></a>: A classic textbook on efficient collision detection.</li>
-</ul>
+		<div class="content post__content clearfix"><h3 id="overview">Overview</h3>
+<p>The goal of this project is to create a town. It has to be a living town, with things moving around in it. We will provide you with a starter framework. But you must add the contents of the town.</p>
+<p>We hesitate to tell you what to do, since students in the past have come up with some really creative things. We’ve seen cities with skyscrapers, space cities with flying saucers, tropical islands, a Harry Potter city with flying broomsticks, farms with cows and chickens, farms where flying saucers came and abducted the cows, … There are gallery pages with some old projects if you want some ideas (see below - or check out the old galleries to see some motivating examples).</p>
+<p>If this sounds like its arbitrarily open-ended, you have the right idea. Clearly, you could make this as fancy as you want. Our goal is to give you the opportunity to demonstrate your competence at writing 3D graphics programs, as well as an opportunity to experiment with some more advanced topics that you think are interesting. However, we encourage you to focus on the core requirements first.</p>
+<p>The hard part in specifying this assignment is providing grading criteria. The short version: do enough cool stuff and document it. We want students to be creative and try things out, but also focus on graphics aspects in their projects. Previous versions of the assignment had long complicated lists of grading criteria. This semester, it’s simpler, but there are still lots of options listed.</p>
+<p>You will create your town by building on top of the “Graphics Town Framework” that we will provide. You have been using this framework over the past several workbooks. In fact, you can take objects from prior workbooks and put them in your town. When you try the example, you will notice that there are some additional features of the framework that you haven’t used yet (like the ability to ride objects or look at specific objects) - these will make it easier for us to see things in your world.</p>
+<p>All of the requirements are objects that you add to the framework (you should have experience doing this from prior assignments). Some requirements are specific, while others are more broad.</p>
+<h3 id="deadlines">Deadlines</h3>
+<p>Ideally, we would give you as much time as possible so you have lots of time to make cool stuff. But, because of the end of the semester, we are limited in how much time we can give you. There are University rules and practical issues with grading assignments in a timely manner.</p>
+<p>The assignment is due the last day of class. Late assignments will not be accepted.</p>
+<p>Remember, turning in your assignment means submitting the P2 Workbook Form. We won’t know to grade your assignment if you do not do the assignment.</p>
+<h3 id="requirements">Requirements</h3>
+<p>The html page has a view of your town that allows the user to explore and see everything. An appropriate interface is provided by the framework. The initial repository you start with provides a simple “world.” You need to change that simple world into something more interesting. You will need to add new objects (and probably remove the ones that are there). You will need to arrange the objects in a meaningful way. You will need to give the (at least some of the) objects behaviors. We use the term “behavior” for the code that makes the object move and do stuff.</p>
+<p>The real requirement is to make a cool world that shows off your ability to do graphics programming. <a href="../../docs/4/">Page  4  (Graphics Town Rubric)</a> gives some more specific things that you must do in order to get full credit. But basically, it is to make objects and put them in the world. The rubric may seem long and complicated, but that is because we are trying to quantify “cool enough” in a way that gives students flexibility.</p>
+<p>The framework provides the required user interface <a href="../../docs/3/">Page  3  (Graphics Town Hints)</a>. You should not need to change the framework code. You should use the framework correctly in order to provide the required user interface.</p>
+<p>You will need to define new object types (with behaviors, through their stepWorld methods), and update the js file to create the world appropriately by placing objects into the GrWorld. You should be experienced with doing this from prior workbooks. Note: be sure to use the timeDelta parameter of stepWorld: your objects must stop when the the world is stopped, and the speed control of the world must work. See <a href="../../docs/3/">Page  3  (Graphics Town Hints)</a> for some details.</p>
+<p>The objects you create have names that allow them to be identified in the user interface. This means that all objects should have meaningful names, and these names have to be unique. Objects are automatically put on the “lookat” list in the user interface.</p>
+<p>You must identify some objects to be on the “highlight” list in the UI: this is a shorter version of the “lookat” list that allows us to find interesting objects quickly. The rubric will specify which objects should be placed on this list. See <a href="../../docs/3/">Page  3  (Graphics Town Hints)</a> for some details on highlight.</p>
+<p>The examples directory contains a bunch of sample objects, as well as an example “setup” function that places them into the world. You may use the objects (see below about using objects from others). You may want to make the groundplane bigger (you give yourself more “land”), or remove it altogether. Be warned: the framework code computes the initial camera position based on the groundplane, so if you have no groundplane, you will need to give an initial camera configuration.</p>
+<p>Your town must look like a reasonable scene - it can’t just be a collection of random objects placed haphazardly (as the sample scene is). We will ask you what your “theme” is.</p>
+<p>Your program needs to run at a reasonable frame rate on a testing computer. Not all of the course staff have fast computers with fancy GPUs. Don’t go too overboard with excessive numbers of objects.</p>
+<p>You must also provide documentation by filling in the Workbook Form of the workbook. This is very important! We cannot give you credit for things that you do not document!</p>
+<h3 id="collaboration-use-re-use-and-attribution">Collaboration: Use, Re-Use and Attribution</h3>
+<p>You must complete this assignment yourself. We are not allowing students to work in groups.</p>
+<p>For this assignment, we do allow you to use pieces that you have made for prior assignments without attribution. However, there are a bunch of rules for this.</p>
+<p>You must give attribution for anything that you do not make yourself and provide sufficient documentation to show that you understand the code. If you find it on the web, you must give a link. If you get it from someone else, you must explicitly name them in your documentation. You must have permission to use anything that you did not make yourself. If you find it on the web, make sure that it has an open license. If you get it from someone else, make sure it is OK with them. If your work is based on a tutorial, online document, or something like that, please specify it in the textbox.</p>
+<p>You are encouraged to use pieces from your old workbooks for this assignment. In the past, you’ve been using the Graphics Town framework to make houses, cars, shiny objects, amusement park rides, &hellip; You need to make some new stuff, but you are also encouraged to use old stuff as well. The goal is to have lots of stuff. In fact, some of your 2D assignments can be converted (the fireworks and train are good candidates).</p>
+<p><strong>Not recommended</strong> You may use art assets (e.g. 3D model files and images) that you obtain online. If you use a model or texture (or any other “asset”) from the web, make sure you have the legal right to use it, and document where it came from when you give attribution. Note that an object loaded from a 3D model file fulfills a requirement, but not all of your objects can be files you obtained.</p>
+<h3 id="history">History</h3>
+<p>The Graphics Town Project has a long history (since <a href="https://research.cs.wisc.edu/graphics/Courses/559-f2000/559.htm">2000</a>, and students have generally liked it over the years. The history is described on this <a href="https://pages.graphics.cs.wisc.edu/559-f14/2014/11/07/project-2-graphics-town-framework-code/">2014</a> page. That page also discusses the old C++ framework code (which you don’t have to look at). The assignment is described at the <a href="https://pages.graphics.cs.wisc.edu/559-f14/2014/11/07/project-2-graphics-town/">2014 Graphics Town Project</a> Page. 2014 was the last year of the C++ version of the assignment.</p>
+<p>The most interesting thing about the history is to see what other students have done to inspire you. The past five years, students had a similar (but not identical) assignment: <a href="https://pages.graphics.cs.wisc.edu/559-sp24/pages/galleries/">galleries</a>.</p>
+<p>There is a Gallery for some years past. Remember, these were different assignments: in older assignments students didn’t have a high level API (like THREE) to work with, and they were given less starter code. It’s pretty remarkable how creative the students were. <a href="https://pages.graphics.cs.wisc.edu/559-f14/2014/12/18/2014-project-gallery/">2014</a>, <a href="https://graphics.cs.wisc.edu/Courses/559-f2010/posts/p4gallery-p4gallery/">2010</a>, <a href="https://graphics.cs.wisc.edu/Courses/559-f2009/posts/main-p4gallery/">2009</a>.</p>
+<p>The <a href="https://research.cs.wisc.edu/graphics/Courses/559-f2000/Project3/index.htm">2000 Graphics Town Assignment</a> Page is an interesting historical artifact. Things have come a long way in 20 years.</p>
+<a href="../../docs/3/" class="Next__Page">Next: Graphics Town Hints </a>
 
             
 			
@@ -290,12 +60,15 @@ Once a collision is detected, we need to push the mass point back to the surface
 
                 </div>
                     <div class="sidebar">
-<h2 class="Side_Title">Workbook 10: Advanced Topics</h2>
+<h2 class="Side_Title">Workbook 12: Graphics Town</h2>
 <p class="Side__Note">Pages:</p>
 <ul class="Side__List">
-    <li class="Side__Item Side__Unselected"><a href="../../">Index (Advanced Topics)</a></li>
-        <li class="Side__Item Side__Unselected"> <a href="../../docs/1/">1: Pose Detection and Animation </a></li>
-        <li class="Side__Item Side__Selected"> 2: Cloth Simulation </li>
+    <li class="Side__Item Side__Unselected"><a href="../../">Index (Workbook Final: Graphics Town)</a></li>
+        <li class="Side__Item Side__Unselected"> <a href="../../docs/1/">1: Graphics Town </a></li>
+        <li class="Side__Item Side__Selected"> 2: Graphics Town Overview </li>
+        <li class="Side__Item Side__Unselected"> <a href="../../docs/3/">3: Graphics Town Hints </a></li>
+        <li class="Side__Item Side__Unselected"> <a href="../../docs/4/">4: Graphics Town Rubric </a></li>
+        <li class="Side__Item Side__Unselected"> <a href="../../docs/5/">5: Graphics Town Advanced Things </a></li>
 </ul>
 </div>
 </div>
