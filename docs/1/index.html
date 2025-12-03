@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+    
+<!-- CS559 Workbook Pages - page content &copy; 2021, Michael Gleicher -->
+<!-- This page is part of a Workbook developed for the 
+    CS559 Computer Graphics Class at the University of Wisconsin
+    https://graphics.cs.wisc.edu/Courses/559-sp2025/ -->
+    <head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" href="../../css/workbook.css">
+        <script src="../../js/resizeIFrames.js"></script>
+    </head>
+    <body>
+        <div class="container container--outer"><div class="maincolumn">
+<main class="main" role="main">
+	<article class="post">
+		<header class="post__header"><h1 class="post__title">Page 1: Pose Detection and Animation</h1>
+		</header>
+		<div class="content post__content clearfix"><!-- # Introduction to Keypoint Detection and Animation -->
+<p>This page provides a introduction of how to develop a web application that captures human motion in real-time and uses this data to animate a 3D articulated model.</p>
+<p>Here&rsquo;s what we will cover:</p>
+<ul>
+<li><strong>Detect keypoints of hand pose and body pose via Tensorflow.js</strong></li>
+<li><strong>How to apply the detected keypoints for animation.</strong></li>
+</ul>
+<p>This part stands at the intersection of real-time computer graphics, machine learning, and human-computer interaction, offering a practical exploration of modern interactive technologies. We will use packages from Tensorflow.js.</p>
+<h2 id="hand-pose-detection">Hand Pose Detection</h2>
+<p>In this part we will use MediaPipeHands from Tensorflow.js to get the detected keypoints from a video of hand pose movement. Before we get started in our .js file, we should import required packages in our .html file:</p>
+<div style="overflow-x: auto;">
+<div class="highlight"><div style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-html" data-lang="html"><span style="display:flex;"><span><span style="color:#75715e">&lt;!-- Load MediaPipe and TensorFlow.js dependencies --&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#111">&lt;</span><span style="color:#f92672">script</span> <span style="color:#75af00">src</span><span style="color:#f92672">=</span><span style="color:#d88200">&#34;https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js&#34;</span><span style="color:#111">&gt;&lt;/</span><span style="color:#f92672">script</span><span style="color:#111">&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#111">&lt;</span><span style="color:#f92672">script</span> <span style="color:#75af00">src</span><span style="color:#f92672">=</span><span style="color:#d88200">&#34;https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@4.10.0/dist/tf-core.min.js&#34;</span><span style="color:#111">&gt;&lt;/</span><span style="color:#f92672">script</span><span style="color:#111">&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#111">&lt;</span><span style="color:#f92672">script</span> <span style="color:#75af00">src</span><span style="color:#f92672">=</span><span style="color:#d88200">&#34;https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@4.10.0/dist/tf-backend-webgl.min.js&#34;</span><span style="color:#111">&gt;&lt;/</span><span style="color:#f92672">script</span><span style="color:#111">&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#111">&lt;</span><span style="color:#f92672">script</span> <span style="color:#75af00">src</span><span style="color:#f92672">=</span><span style="color:#d88200">&#34;https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.0/dist/hand-pose-detection.min.js&#34;</span><span style="color:#111">&gt;&lt;/</span><span style="color:#f92672">script</span><span style="color:#111">&gt;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></div>
+<p>After importing required packages, we create a hand pose detection model and set its configuration:</p>
+<div style="overflow-x: auto;">
+<div class="highlight"><div style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">9
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-javascript" data-lang="javascript"><span style="display:flex;"><span><span style="color:#00a8c8">const</span> <span style="color:#75af00">model</span> <span style="color:#f92672">=</span> <span style="color:#75af00">handPoseDetection</span><span style="color:#111">.</span><span style="color:#75af00">SupportedModels</span><span style="color:#111">.</span><span style="color:#75af00">MediaPipeHands</span><span style="color:#111">;</span>
+</span></span><span style="display:flex;"><span><span style="color:#00a8c8">const</span> <span style="color:#75af00">detectorConfig</span> <span style="color:#f92672">=</span> <span style="color:#111">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75af00">runtime</span><span style="color:#f92672">:</span> <span style="color:#d88200">&#39;mediapipe&#39;</span><span style="color:#111">,</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75af00">solutionPath</span><span style="color:#f92672">:</span> <span style="color:#d88200">&#39;https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915&#39;</span><span style="color:#111">,</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75af00">modelComplexity</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">1</span><span style="color:#111">,</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75af00">minDetectionConfidence</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">0.5</span><span style="color:#111">,</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75af00">minTrackingConfidence</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">0.5</span><span style="color:#111">,</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75af00">modelType</span><span style="color:#f92672">:</span> <span style="color:#d88200">&#39;lite&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#111">};</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></div>
+<p>There are two options for you to choose from: lite, and full. From lite to full, the accuracy increases while the inference speed decreases.
+Once we define our detection model, we can pass in a video stream or static image to detect poses. Here we pass a video from <code>hand-pose-one-through-five.mp4</code> in our .html file.</p>
+<video width="600" controls>
+<source src="hand-pose-one-through-five.mp4" alt="Hand Pose One Through Five" type="video/mp4">
+</video>
+<div style="overflow-x: auto;">
+<div class="highlight"><div style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-javascript" data-lang="javascript"><span style="display:flex;"><span><span style="color:#00a8c8">const</span> <span style="color:#75af00">video</span> <span style="color:#f92672">=</span> <span style="color:#111">document</span><span style="color:#111">.</span><span style="color:#75af00">getElementById</span><span style="color:#111">(</span><span style="color:#d88200">&#39;video&#39;</span><span style="color:#111">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#00a8c8">const</span> <span style="color:#75af00">estimationConfig</span> <span style="color:#f92672">=</span> <span style="color:#111">{</span> <span style="color:#75af00">flipHorizontal</span><span style="color:#f92672">:</span> <span style="color:#00a8c8">true</span> <span style="color:#111">};</span>
+</span></span><span style="display:flex;"><span><span style="color:#00a8c8">const</span> <span style="color:#75af00">hands</span> <span style="color:#f92672">=</span> <span style="color:#00a8c8">await</span> <span style="color:#75af00">detector</span><span style="color:#111">.</span><span style="color:#75af00">estimateHands</span><span style="color:#111">(</span><span style="color:#75af00">video</span><span style="color:#111">,</span> <span style="color:#75af00">estimationConfig</span><span style="color:#111">);</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></div>
+<p>The output format is as follows: hands represent an array of detected hand predictions in the image frame. For each hand, the structure contains a prediction of the handedness (left or right) as well as a confidence score of this prediction. An array of 2D keypoints is also returned, where each keypoint contains x, y, and name. The x, y denotes the horizontal and vertical position of the hand keypoint in the image pixel space, and name denotes the joint label. In addition to 2D keypoints, we also return 3D keypoints (x, y, z values) in a metric scale, with the origin in auxiliary keypoint formed as an average between the first knuckles of index, middle, ring and pinky fingers.</p>
+<div style="overflow-x: auto;">
+<div class="highlight"><div style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-javascript" data-lang="javascript"><span style="display:flex;"><span><span style="color:#111">[</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#111">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75af00">score</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">0.8</span><span style="color:#111">,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75af00">Handedness</span><span style="color:#f92672">:</span> <span style="color:#d88200">&#39;Right&#39;</span><span style="color:#111">,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75af00">keypoints</span><span style="color:#f92672">:</span> <span style="color:#111">[</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#111">{</span><span style="color:#75af00">x</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">105</span><span style="color:#111">,</span> <span style="color:#75af00">y</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">107</span><span style="color:#111">,</span> <span style="color:#75af00">name</span><span style="color:#f92672">:</span> <span style="color:#d88200">&#34;wrist&#34;</span><span style="color:#111">},</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#111">{</span><span style="color:#75af00">x</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">108</span><span style="color:#111">,</span> <span style="color:#75af00">y</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">160</span><span style="color:#111">,</span> <span style="color:#75af00">name</span><span style="color:#f92672">:</span> <span style="color:#d88200">&#34;pinky_finger_tip&#34;</span><span style="color:#111">},</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#111">...</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#111">]</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75af00">keypoints3D</span><span style="color:#f92672">:</span> <span style="color:#111">[</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#111">{</span><span style="color:#75af00">x</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">0.00388</span><span style="color:#111">,</span> <span style="color:#75af00">y</span><span style="color:#f92672">:</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">0.0205</span><span style="color:#111">,</span> <span style="color:#75af00">z</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">0.0217</span><span style="color:#111">,</span> <span style="color:#75af00">name</span><span style="color:#f92672">:</span> <span style="color:#d88200">&#34;wrist&#34;</span><span style="color:#111">},</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#111">{</span><span style="color:#75af00">x</span><span style="color:#f92672">:</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">0.025138</span><span style="color:#111">,</span> <span style="color:#75af00">y</span><span style="color:#f92672">:</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">0.0255</span><span style="color:#111">,</span> <span style="color:#75af00">z</span><span style="color:#f92672">:</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">0.0051</span><span style="color:#111">,</span> <span style="color:#75af00">name</span><span style="color:#f92672">:</span> <span style="color:#d88200">&#34;pinky_finger_tip&#34;</span><span style="color:#111">},</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#111">...</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#111">]</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#111">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#111">]</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></div>
+<p>Note that handedness is determined assuming the input image or video is <strong>mirrored</strong>, i.e., taken with a front-facing/selfie camera with images flipped horizontally. If it is not the case, we should set the flipHorizontal to <strong>True</strong>, and then flip the x values of the output keypoints as well.</p>
+<p>For 2D points, we might just want to simply flip x as canvas.width - x. For 3D points, where values are normalized to (-1, 1), we might want to flip x, y, and z as -x, -y, and -z. The reason is:</p>
+<ul>
+<li>Y-axis: In MediaPipe, Y increases downward (image coordinates), but in Three.js 3D, Y increases upward. So we negate Y to convert coordinate systems.</li>
+<li>Z-axis: In MediaPipe, Z is depth away from camera (positive = further), but in Three.js, negative Z is away from camera. So we negate Z.</li>
+<li>X-axis: We negate X because flipHorizontal: true gives us coordinates in flipped space, but we want to match the un-flipped video.</li>
+</ul>
+<p> 
+
+
+
+<div id="box-10-01-01" style="border: 2px solid black; padding: 0px 5px 0px 5px; margin: 0;border-radius: 5px;">
+    <b>Box 10-01-01</b>&nbsp;&nbsp;
+        <a href=../../for_students/10-01-01.html class="boxtitlelink">10-01-01.html</a>
+        &nbsp;&nbsp;<a href="../../for_students/10-01-01.js" class="boxtitlelink">10-01-01.js</a>
+    <iframe
+        title="tf-01"
+        src="../../for_students/10-01-01.html"
+        class="includebox includebox-standard"
+        width="100%"
+        height="100%"
+        scrolling="no"
+        frameborder="0"
+        id="box-iframe-10-01-01"
+    ></iframe>
+</div></p>
+<p> 
+
+
+
+<div id="box-10-01-02" style="border: 2px solid black; padding: 0px 5px 0px 5px; margin: 0;border-radius: 5px;">
+    <b>Box 10-01-02</b>&nbsp;
+        (3 basic + 1 advanced)&nbsp&nbsp;
+        <a href=../../for_students/10-01-02.html class="boxtitlelink">10-01-02.html</a>
+        &nbsp;&nbsp;<a href="../../for_students/10-01-02.js" class="boxtitlelink">10-01-02.js</a>
+    <iframe
+        title="tf-02"
+        src="../../for_students/10-01-02.html"
+        class="includebox includebox-standard"
+        width="100%"
+        height="100%"
+        scrolling="no"
+        frameborder="0"
+        id="box-iframe-10-01-02"
+    ></iframe>
+</div></p>
+<div class="page-rubric-container">
+        <i>There are basic or advanced items to be completed for Box 10-01-02.</i>
+    </div>
+<p>
+<a href="../../for_students/10-01-01.js" class="box-html" data-tag="tf-01">10-01-01.js</a>
+ provides a simple demo about hand pose detection that visualizes the detected hand skeleton in a 2D canvas using <code>hands.keypoints</code>. In 
+<a href="../../for_students/10-01-02.js" class="box-html" data-tag="tf-02">10-01-02.js</a>
+, we are going to apply the keypoints we get from the detector to animate a 3D hand model using <code>hands.keypoints3D</code>, where each joint node is represented by a SphereGeometry, and a CylinderGeometry is used to link two nodes. All the detected keypoints are already provided, and you only need to create Geometry objects to make a skeleton animation.
+We assume the skeleton of the hand is like:</p>
+<div style="overflow-x: auto;">
+<div class="highlight"><div style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-javascript" data-lang="javascript"><span style="display:flex;"><span><span style="color:#00a8c8">const</span> <span style="color:#75af00">HAND_CONNECTIONS</span> <span style="color:#f92672">=</span> <span style="color:#111">[</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#111">[</span><span style="color:#ae81ff">0</span><span style="color:#111">,</span> <span style="color:#ae81ff">1</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">1</span><span style="color:#111">,</span> <span style="color:#ae81ff">2</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">2</span><span style="color:#111">,</span> <span style="color:#ae81ff">3</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">3</span><span style="color:#111">,</span> <span style="color:#ae81ff">4</span><span style="color:#111">],</span> <span style="color:#75715e">// Thumb
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#111">[</span><span style="color:#ae81ff">0</span><span style="color:#111">,</span> <span style="color:#ae81ff">5</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">5</span><span style="color:#111">,</span> <span style="color:#ae81ff">6</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">6</span><span style="color:#111">,</span> <span style="color:#ae81ff">7</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">7</span><span style="color:#111">,</span> <span style="color:#ae81ff">8</span><span style="color:#111">],</span> <span style="color:#75715e">// Index finger
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#111">[</span><span style="color:#ae81ff">0</span><span style="color:#111">,</span> <span style="color:#ae81ff">9</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">9</span><span style="color:#111">,</span> <span style="color:#ae81ff">10</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">10</span><span style="color:#111">,</span> <span style="color:#ae81ff">11</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">11</span><span style="color:#111">,</span> <span style="color:#ae81ff">12</span><span style="color:#111">],</span> <span style="color:#75715e">// Middle finger
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#111">[</span><span style="color:#ae81ff">0</span><span style="color:#111">,</span> <span style="color:#ae81ff">13</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">13</span><span style="color:#111">,</span> <span style="color:#ae81ff">14</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">14</span><span style="color:#111">,</span> <span style="color:#ae81ff">15</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">15</span><span style="color:#111">,</span> <span style="color:#ae81ff">16</span><span style="color:#111">],</span> <span style="color:#75715e">// Ring finger
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#111">[</span><span style="color:#ae81ff">0</span><span style="color:#111">,</span> <span style="color:#ae81ff">17</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">17</span><span style="color:#111">,</span> <span style="color:#ae81ff">18</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">18</span><span style="color:#111">,</span> <span style="color:#ae81ff">19</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">19</span><span style="color:#111">,</span> <span style="color:#ae81ff">20</span><span style="color:#111">],</span> <span style="color:#75715e">// Pinky
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#111">[</span><span style="color:#ae81ff">5</span><span style="color:#111">,</span> <span style="color:#ae81ff">9</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">9</span><span style="color:#111">,</span> <span style="color:#ae81ff">13</span><span style="color:#111">],</span> <span style="color:#111">[</span><span style="color:#ae81ff">13</span><span style="color:#111">,</span> <span style="color:#ae81ff">17</span><span style="color:#111">]</span> <span style="color:#75715e">// Palm connections
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#111">];</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></div>
+<p>where <code>[0, 1]</code> means points with index 0 and 1 from the output keypoints are two of the thumb joint nodes.</p>
+<h2 id="body-pose-detection-and-animation">Body Pose Detection And Animation</h2>
+<p>Like what we did in Hand Pose detection, we can also leverage body pose detection models from Tensorflow.js to get the keypoints of body movement. An example is the BlazePose model:</p>
+<div style="overflow-x: auto;">
+<div class="highlight"><div style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-javascript" data-lang="javascript"><span style="display:flex;"><span><span style="color:#00a8c8">const</span> <span style="color:#75af00">model</span> <span style="color:#f92672">=</span> <span style="color:#75af00">poseDetection</span><span style="color:#111">.</span><span style="color:#75af00">SupportedModels</span><span style="color:#111">.</span><span style="color:#75af00">BlazePose</span><span style="color:#111">;</span>
+</span></span><span style="display:flex;"><span><span style="color:#00a8c8">const</span> <span style="color:#75af00">detectorConfig</span> <span style="color:#f92672">=</span> <span style="color:#111">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75af00">runtime</span><span style="color:#f92672">:</span> <span style="color:#d88200">&#39;mediapipe&#39;</span><span style="color:#111">,</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75af00">solutionPath</span><span style="color:#f92672">:</span> <span style="color:#d88200">&#39;https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.4.1624666670/&#39;</span><span style="color:#111">,</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75af00">modelType</span><span style="color:#f92672">:</span> <span style="color:#d88200">&#39;lite&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#111">};</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></div>
+<p>Once we define our detection model, we can pass in a video stream or static image to detect poses. Here we pass a video from <code>body-pose-dance.mp4</code> in our .html file.</p>
+<video width="600" controls>
+<source src="body-pose-dance.mp4" alt="Body Post Dance" type="video/mp4">
+</video>
+<div style="overflow-x: auto;">
+<div class="highlight"><div style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-javascript" data-lang="javascript"><span style="display:flex;"><span><span style="color:#00a8c8">const</span> <span style="color:#75af00">video</span> <span style="color:#f92672">=</span> <span style="color:#111">document</span><span style="color:#111">.</span><span style="color:#75af00">getElementById</span><span style="color:#111">(</span><span style="color:#d88200">&#39;video&#39;</span><span style="color:#111">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#00a8c8">const</span> <span style="color:#75af00">estimationConfig</span> <span style="color:#f92672">=</span> <span style="color:#111">{</span> <span style="color:#75af00">flipHorizontal</span><span style="color:#f92672">:</span> <span style="color:#00a8c8">true</span> <span style="color:#111">};</span>
+</span></span><span style="display:flex;"><span><span style="color:#00a8c8">const</span> <span style="color:#75af00">poses</span> <span style="color:#f92672">=</span> <span style="color:#00a8c8">await</span> <span style="color:#75af00">detector</span><span style="color:#111">.</span><span style="color:#75af00">estimatePoses</span><span style="color:#111">(</span><span style="color:#75af00">video</span><span style="color:#111">,</span> <span style="color:#75af00">estimationConfig</span><span style="color:#111">);</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></div>
+<p>The default handness rule is the same as hand pose. So if we input a static video instead of capturing a selfie using our webcam, we should set the flipHorizontal to True, and then flip the position values respectively.</p>
+<h3 id="blazepose-keypoints-used-in-mediapipe-blazepose">BlazePose Keypoints: Used in MediaPipe BlazePose</h3>
+<figure><img src="../../docs/1/blazepose_keybpoints.png"
+    alt="BlazePose Keypoints" width="600">
+</figure>
+
+<pre tabindex="0"><code>0-nose
+1-lefteye(inner)
+2-lefteye
+3-lefteye(outer)
+4-righteye(inner)
+5-righteye
+6-righteye(outer)
+7-leftear
+8-rightear
+9-mouth(left)
+10-mouth(right)
+11-leftshoulder
+12-rightshoulder
+13-leftelbow
+14-rightelbow
+15-leftwrist
+16-rightwrist
+17-leftpinky
+18-rightpinky
+19-leftindex
+20-rightindex
+21-leftthumb
+22-rightthumb
+23-lefthip
+24-righthip
+25-leftknee
+26-rightknee
+27-leftankle
+28-rightankle
+29-leftheel
+30-rightheel
+31-leftfootindex
+32-rightfootindex
+</code></pre><p> 
+
+
+
+<div id="box-10-01-03" style="border: 2px solid black; padding: 0px 5px 0px 5px; margin: 0;border-radius: 5px;">
+    <b>Box 10-01-03</b>&nbsp;&nbsp;
+        <a href=../../for_students/10-01-03.html class="boxtitlelink">10-01-03.html</a>
+        &nbsp;&nbsp;<a href="../../for_students/10-01-03.js" class="boxtitlelink">10-01-03.js</a>
+    <iframe
+        title="tf-03"
+        src="../../for_students/10-01-03.html"
+        class="includebox includebox-standard"
+        width="100%"
+        height="100%"
+        scrolling="no"
+        frameborder="0"
+        id="box-iframe-10-01-03"
+    ></iframe>
+</div></p>
+<p> 
+
+
+
+<div id="box-10-01-04" style="border: 2px solid black; padding: 0px 5px 0px 5px; margin: 0;border-radius: 5px;">
+    <b>Box 10-01-04</b>&nbsp;
+        (3 basic + 1 advanced)&nbsp&nbsp;
+        <a href=../../for_students/10-01-04.html class="boxtitlelink">10-01-04.html</a>
+        &nbsp;&nbsp;<a href="../../for_students/10-01-04.js" class="boxtitlelink">10-01-04.js</a>
+    <iframe
+        title="tf-04"
+        src="../../for_students/10-01-04.html"
+        class="includebox includebox-standard"
+        width="100%"
+        height="100%"
+        scrolling="no"
+        frameborder="0"
+        id="box-iframe-10-01-04"
+    ></iframe>
+</div></p>
+<div class="page-rubric-container">
+        <i>There are basic or advanced gallery items to be completed for Box 10-01-04. To get full points, please add explanations of what you did in the .html file (or as notes in the Workbook Form) and submit at least one screenshot and one video recording of the box to the Workbook Canvas Assignment.</i>
+    </div>
+<p>
+<a href="../../for_students/10-01-03.js" class="box-html" data-tag="tf-03">10-01-03.js</a>
+ provides a simple demo about hand pose detection that visualizes the detected hand skeleton in a 2D canvas using <code>hands.keypoints</code>. In 
+<a href="../../for_students/10-01-04.js" class="box-html" data-tag="tf-04">10-01-04.js</a>
+, we are going to apply the keypoints we get from the detector to animate a 3D hand model using <code>pose.keypoints3D</code>, where each joint node is represented by a SphereGeometry, and a CylinderGeometry is used to link two nodes. All the detected keypoints are already provided, and you only need to create Geometry objects to make a skeleton animation.</p>
+<p> 
+
+
+
+<div id="box-10-01-05" style="border: 2px solid black; padding: 0px 5px 0px 5px; margin: 0;border-radius: 5px;">
+    <b>Box 10-01-05</b>&nbsp;&nbsp;
+        <a href=../../for_students/10-01-05.html class="boxtitlelink">10-01-05.html</a>
+        &nbsp;&nbsp;<a href="../../for_students/10-01-05.js" class="boxtitlelink">10-01-05.js</a>
+    <iframe
+        title="tf-05"
+        src="../../for_students/10-01-05.html"
+        class="includebox includebox-standard"
+        width="100%"
+        height="100%"
+        scrolling="no"
+        frameborder="0"
+        id="box-iframe-10-01-05"
+    ></iframe>
+</div></p>
+<p>In addition, 
+<a href="../../for_students/10-01-05.js" class="box-html" data-tag="tf-05">10-01-05.js</a>
+ provides an example of how to use the detected keypoints to animate a GLTF model. The keypoints are used to calculate the rotations of the animated bones. If you are interested, you can replace the model with what you like and have a try.</p>
+<h3 id="basic-items">Basic Items</h3>
+<h4 id="10-01-02">10-01-02</h4>
+<ul>
+<li>Correctly show the keypoints in 3D space using basic geometry objects (like SphereGeometry).</li>
+<li>Correctly connect all the keypoints using basic geometry objects (like CylinderGeometry) to create a hand skeleton.</li>
+<li>The movement of the hand skeletion is correctly following the video.</li>
+</ul>
+<h4 id="10-01-04">10-01-04</h4>
+<ul>
+<li>Correctly show the keypoints in 3D space using basic geometry objects (like SphereGeometry).</li>
+<li>Correctly connect all the keypoints using basic geometry objects (like CylinderGeometry) to create a body skeleton.</li>
+<li>The movement of the body skeletion is correctly following the video.</li>
+</ul>
+<h3 id="advanced-items">Advanced Items</h3>
+<h4 id="10-01-02-1">10-01-02</h4>
+<ul>
+<li>Make the hand pose animation more creative. For example, add some interactions with the environment.</li>
+</ul>
+<h4 id="10-01-04-1">10-01-04</h4>
+<ul>
+<li>Make the body pose animation more creative. For example, add some interactions with the environment.</li>
+</ul>
+<a href="../../docs/2/" class="Next__Page">Next: Cloth Simulation </a>
+
+            
+			
+			
+		</div>
+	</article>
+</main>
+
+                </div>
+                    <div class="sidebar">
+<h2 class="Side_Title">Workbook 10: Advanced Topics</h2>
+<p class="Side__Note">Pages:</p>
+<ul class="Side__List">
+    <li class="Side__Item Side__Unselected"><a href="../../">Index (Advanced Topics)</a></li>
+        <li class="Side__Item Side__Selected"> 1: Pose Detection and Animation </li>
+        <li class="Side__Item Side__Unselected"> <a href="../../docs/2/">2: Cloth Simulation </a></li>
+</ul>
+</div>
+</div>
+    </body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+    
+<!-- CS559 Workbook Pages - page content &copy; 2021, Michael Gleicher -->
+<!-- This page is part of a Workbook developed for the 
+    CS559 Computer Graphics Class at the University of Wisconsin
+    https://graphics.cs.wisc.edu/Courses/559-sp2025/ -->
+    <head>
+	<meta name="generator" content="Hugo 0.140.2">
+        <meta charset="UTF-8">
+        <link rel="stylesheet" href="./css/workbook.css">
+        <script src="./js/resizeIFrames.js"></script>
+    </head>
+    <body>
+        <div class="container container--outer"><div class="maincolumn">
+
+
+<main class="main list" role="main">
+	<header class="main__header">
+		<h1 class="main__title">Workbook 10: Advanced Topics</h1>
+	</header>
+	<div class="content main__content clearfix">
+        
+
+        <p>This workbook is due on Tuesday, November 18, 2025.</p><p>This week, the TAs will cover some advanced topics in Computer Graphics during the lectures, including pose detection and animation, and cloth simulation with mass-spring system. These topics are usually covered in more advanced graphics and computer vision courses, for example, <a href="https://www.biostat.wisc.edu/~yli/bmi771_cs771_25fall/">CS771</a> and <a href="https://pages.cs.wisc.edu/~sifakis/courses/cs839-s22/">CS839</a>, and the TAs will give you a brief preview and introduction to these topics.</p>
+<h2 id="readings">Readings</h2>
+<p>The main source of the material in this workbook are the guest lectures and the references in the workbook.</p>
+<h2 id="exercises">Exercises</h2>
+<p>There are three exercises on the next two pages. You can use the things you create in this Workbook for the Graphics Town (individual) Project and the Game (group) Project.</p>
+    <div class="page-rubric-container">
+<details class="page__rubric">
+    <summary>Workbook Rubric (12 basic + 7 advanced (6 max) = 18 total)</summary>
+    <br/>
+    <table class="page-rubric-table" style="background-color: #f0f0f0;">
+        <thead>
+            <tr>
+                <th>Box</th>
+                <th>Basic</th>
+                <th>Advanced</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td></td>
+                <td>1</td>
+                <td></td>
+                <td>correct WB10 Workbook Form submission on time</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-10-01-02">10-01-02</a></td>
+                <td>1</td>
+                <td></td>
+                <td>Correctly show the keypoints in 3D space using basic geometry objects</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-10-01-02">10-01-02</a></td>
+                <td>1</td>
+                <td></td>
+                <td>Correctly connect all the keypoints using basic geometry objects to create a hand skeleton</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-10-01-02">10-01-02</a></td>
+                <td>1</td>
+                <td></td>
+                <td>The movement of the hand skeletion is correctly following the video</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-10-01-04">10-01-04</a></td>
+                <td>1</td>
+                <td></td>
+                <td>Correctly show the keypoints in 3D space using basic geometry objects</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-10-01-04">10-01-04</a></td>
+                <td>1</td>
+                <td></td>
+                <td>Correctly connect all the keypoints using basic geometry objects</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-10-01-04">10-01-04</a></td>
+                <td>1</td>
+                <td></td>
+                <td>The movement of the hand skeletion is correctly following the video</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-10-01-02">10-01-02</a></td>
+                <td></td>
+                <td>1</td>
+                <td>Make the hand pose animation more creative</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/1/#box-10-01-04">10-01-04</a></td>
+                <td></td>
+                <td>1</td>
+                <td>Make the body pose animation more creative</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
+                <td>1</td>
+                <td></td>
+                <td>The default simulation settings should be numerically stable</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
+                <td>1</td>
+                <td></td>
+                <td>Include UI controls for interactivity</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
+                <td>1</td>
+                <td></td>
+                <td>Implement a more stable integration method</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
+                <td>1</td>
+                <td></td>
+                <td>Implement a drag (air resistance) force, with parameters adjustable through the UI.</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
+                <td>1</td>
+                <td></td>
+                <td>Convert the cloth into a triangular mesh for rendering</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
+                <td></td>
+                <td>1</td>
+                <td>The simulation should show dynamic motion</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
+                <td></td>
+                <td>1</td>
+                <td>Implement shear and bending springs, and add a wireframe view option in the UI to visually show different spring connections</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
+                <td></td>
+                <td>1</td>
+                <td>Add texture mapping to the cloth surface</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
+                <td></td>
+                <td>1</td>
+                <td>Implement collision with an object</td>
+            </tr>
+            <tr>
+                        <td><a href="./docs/2/#box-10-02-04">10-02-04</a></td>
+                <td></td>
+                <td>1</td>
+                <td>Introduce technically challenging and visually noticeable features</td>
+            </tr>
+        </tbody>
+    </table>
+</details>
+</div>
+<h2 id="get-started">Get Started</h2>
+<p>Everything begins on <a href="./docs/1/">Page &nbsp;1&nbsp; (Pose Detection and Animation)</a>.</p>
+
+        
+	</div>
+</main>
+
+                </div>
+                    <div class="sidebar">
+<h2 class="Side_Title">Workbook 10: Advanced Topics</h2>
+<p class="Side__Note">Pages:</p>
+<ul class="Side__List">
+    <li class="Side__Item Side__Selected">Index (Advanced Topics) </li>
+        <li class="Side__Item Side__Unselected"> <a href="./docs/1/">1: Pose Detection and Animation </a></li>
+        <li class="Side__Item Side__Unselected"> <a href="./docs/2/">2: Cloth Simulation </a></li>
+</ul>
+</div>
+</div>
+    </body>
+</html>

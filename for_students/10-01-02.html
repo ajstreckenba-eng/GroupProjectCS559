@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../libs/CS559/style559.css" />
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "../libs/CS559-Three/build/three.module.js"
+      }
+    }
+    </script>
+  </head>
+
+  <body>
+    <div id="video-container" style="display:flex;gap:16px;align-items:flex-start;">
+      <div style="position: relative; display: inline-block;">
+        <video id="video" playsinline autoplay muted loop style="width:480px;height:auto;background:#000">
+        <source src="../docs/1/hand-pose-one-through-five.mp4" type="video/mp4">
+        </video>
+      </div>
+      <div id="debug" style="font-family:monospace;white-space:pre-wrap;font-size:12px;">Initializing...</div>
+    </div>
+
+    <div id="div1">
+    </div>
+
+    <!-- Load MediaPipe and TensorFlow.js dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@4.10.0/dist/tf-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@4.10.0/dist/tf-backend-webgl.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.0/dist/hand-pose-detection.min.js"></script>
+    
+    <!-- Load our main script -->
+    <script src="10-01-02.js" type="module"></script>
+  </body>
+</html>
+<!-- CS559 2025 Workbook -->
