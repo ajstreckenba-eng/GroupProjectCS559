@@ -255,6 +255,18 @@ export function createBuildingMaterialWithWindows(fogParams = {}, isNightMode = 
       // Window vs wall determination
       bool isWindow = (windowUV.x > 0.15 && windowUV.x < 0.85 && windowUV.y > 0.1 && windowUV.y < 0.9);
 
+      // Balcony determination (every 3rd floor, during day mode)
+      float floorNum = floor(vUv.y * 12.0);
+      bool isBalconyFloor = mod(floorNum, 3.0) == 0.0 && !isNightMode;
+      // Balcony at bottom of floor (bigger and more visible)
+      bool isBalcony = isBalconyFloor && windowUV.y < 0.25 && windowUV.x > 0.15 && windowUV.x < 0.85;
+
+      // Cheering person on balcony (bigger and more visible)
+      float personId = floor(vUv.x * 4.0) + floor(vUv.y * 12.0) * 4.0;
+      bool hasPerson = random(vec2(personId, 1.0)) > 0.6 && isBalconyFloor;
+      // Person positioned ON the balcony (bigger size)
+      bool isPerson = hasPerson && windowUV.y > 0.05 && windowUV.y < 0.25 && windowUV.x > 0.35 && windowUV.x < 0.65 && !isNightMode;
+
       // Random light on/off for each window
       float windowId = floor(vUv.x * 4.0) + floor(vUv.y * 12.0) * 4.0;
       float lightOn = random(vec2(windowId, 0.0));
@@ -262,6 +274,12 @@ export function createBuildingMaterialWithWindows(fogParams = {}, isNightMode = 
 
       // Base building color (cream stone)
       vec3 wallColor = buildingColor;
+
+      // Balcony color (darker, like concrete - more prominent)
+      vec3 balconyColor = vec3(0.35, 0.35, 0.4);
+
+      // Person color (bright, colorful clothing - highly visible)
+      vec3 personColor = vec3(1.0, 0.2, 0.1); // Bright red/orange shirt
 
       // Window colors
       vec3 windowColor;
@@ -273,8 +291,15 @@ export function createBuildingMaterialWithWindows(fogParams = {}, isNightMode = 
         windowColor = vec3(0.1, 0.15, 0.2);
       }
 
-      // Mix between wall and window
-      vec3 baseColor = isWindow ? windowColor : wallColor;
+      // Mix between wall, window, balcony, and person
+      vec3 baseColor = wallColor;
+      if (isPerson) {
+        baseColor = personColor;
+      } else if (isBalcony) {
+        baseColor = balconyColor;
+      } else if (isWindow) {
+        baseColor = windowColor;
+      }
 
       // Normalize the normal
       vec3 N = normalize(vNormal);
@@ -291,6 +316,12 @@ export function createBuildingMaterialWithWindows(fogParams = {}, isNightMode = 
       if (isWindow && isNightMode && windowLit) {
         diffuse = baseColor; // Emissive windows
         ambient = baseColor * 0.5;
+      }
+
+      // People on balconies are bright and visible (emissive)
+      if (isPerson) {
+        diffuse = baseColor * 1.5; // Boost brightness
+        ambient = baseColor * 0.8;  // High ambient so they're visible from all angles
       }
 
       // Specular component (Blinn-Phong) - minimal for windows

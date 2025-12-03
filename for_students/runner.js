@@ -254,28 +254,48 @@ export class Obstacle extends GrObject {
     let geometry, material, mesh;
 
     if (type === 'box') {
-      // Overhead obstacle - must slide under
-      geometry = new T.BoxGeometry(1.2, 0.4, 1.2);
+      // Overhead obstacle - must slide under - TALLER and more obvious
+      geometry = new T.BoxGeometry(1.5, 0.6, 1.5);
       material = new T.MeshStandardMaterial({
         color: 0xff4444,
         roughness: 0.5,
         metalness: 0.3
       });
       mesh = new T.Mesh(geometry, material);
-      mesh.position.y = 0.8; // Higher up - must slide to avoid
+      mesh.position.y = 1.2; // Much higher up - must slide to avoid
 
       // Add warning stripes
-      const stripeGeom = new T.BoxGeometry(0.2, 0.42, 1.22);
+      const stripeGeom = new T.BoxGeometry(0.25, 0.62, 1.52);
       const stripeMat = new T.MeshStandardMaterial({
         color: 0xffff00,
         emissive: 0x444400
       });
       const stripe1 = new T.Mesh(stripeGeom, stripeMat);
-      stripe1.position.set(-0.4, 0.8, 0);
+      stripe1.position.set(-0.5, 1.2, 0);
       const stripe2 = new T.Mesh(stripeGeom, stripeMat);
-      stripe2.position.set(0.4, 0.8, 0);
+      stripe2.position.set(0.5, 1.2, 0);
       group.add(stripe1);
       group.add(stripe2);
+
+      // Add downward arrow using cones and cylinder
+      const arrowMat = new T.MeshStandardMaterial({
+        color: 0xffffff,
+        emissive: 0xffffff,
+        emissiveIntensity: 0.5
+      });
+
+      // Arrow shaft (cylinder)
+      const shaftGeom = new T.CylinderGeometry(0.08, 0.08, 0.4, 8);
+      const shaft = new T.Mesh(shaftGeom, arrowMat);
+      shaft.position.set(0, 1.2, 0);
+      group.add(shaft);
+
+      // Arrow head (cone pointing down)
+      const headGeom = new T.ConeGeometry(0.2, 0.3, 8);
+      const head = new T.Mesh(headGeom, arrowMat);
+      head.position.set(0, 0.9, 0);
+      head.rotation.x = Math.PI; // Point downward
+      group.add(head);
     } else if (type === 'barrier') {
       geometry = new T.BoxGeometry(1, 0.5, 0.8);
       material = new T.MeshStandardMaterial({ color: 0xffaa00 });
@@ -420,6 +440,130 @@ export class Coin extends GrObject {
   }
 }
 
+// Chase Character (like the security guard in Subway Surfers)
+export class ChaseCharacter extends GrObject {
+  constructor() {
+    const group = new T.Group();
+    const scale = 0.6; // Slightly bigger than player
+
+    // Security guard appearance
+    // Body with dark blue uniform
+    const bodyGeometry = new T.BoxGeometry(0.7 * scale, 1.6 * scale, 0.5 * scale);
+    const bodyMaterial = new T.MeshStandardMaterial({
+      color: 0x1a1a4d,
+      roughness: 0.8,
+      metalness: 0.1
+    });
+    const body = new T.Mesh(bodyGeometry, bodyMaterial);
+    body.position.y = 0.8 * scale;
+    group.add(body);
+
+    // Head
+    const headGeometry = new T.SphereGeometry(0.35 * scale);
+    const headMaterial = new T.MeshStandardMaterial({
+      color: 0xffcc99,
+      roughness: 0.7
+    });
+    const head = new T.Mesh(headGeometry, headMaterial);
+    head.position.y = 2.0 * scale;
+    group.add(head);
+
+    // Police cap
+    const capGeometry = new T.CylinderGeometry(0.38 * scale, 0.35 * scale, 0.2 * scale, 16);
+    const capMaterial = new T.MeshStandardMaterial({
+      color: 0x0a0a2a,
+      roughness: 0.9
+    });
+    const cap = new T.Mesh(capGeometry, capMaterial);
+    cap.position.y = 2.3 * scale;
+    group.add(cap);
+
+    // Badge (yellow star on chest)
+    const badgeGeometry = new T.BoxGeometry(0.15 * scale, 0.15 * scale, 0.05 * scale);
+    const badgeMaterial = new T.MeshStandardMaterial({
+      color: 0xffdd00,
+      emissive: 0xffaa00,
+      emissiveIntensity: 0.5,
+      metalness: 0.8
+    });
+    const badge = new T.Mesh(badgeGeometry, badgeMaterial);
+    badge.position.set(0, 1.2 * scale, 0.3 * scale);
+    group.add(badge);
+
+    // Arms
+    const armGeometry = new T.BoxGeometry(0.22 * scale, 0.9 * scale, 0.22 * scale);
+    const armMaterial = new T.MeshStandardMaterial({
+      color: 0x1a1a4d,
+      roughness: 0.8
+    });
+
+    const leftArm = new T.Mesh(armGeometry, armMaterial);
+    leftArm.position.set(-0.5 * scale, 0.7 * scale, 0);
+    group.add(leftArm);
+
+    const rightArm = new T.Mesh(armGeometry, armMaterial);
+    rightArm.position.set(0.5 * scale, 0.7 * scale, 0);
+    group.add(rightArm);
+
+    // Legs
+    const legGeometry = new T.BoxGeometry(0.28 * scale, 0.8 * scale, 0.28 * scale);
+    const legMaterial = new T.MeshStandardMaterial({
+      color: 0x0a0a2a,
+      roughness: 0.9
+    });
+
+    const leftLeg = new T.Mesh(legGeometry, legMaterial);
+    leftLeg.position.set(-0.18 * scale, -0.4 * scale, 0);
+    group.add(leftLeg);
+
+    const rightLeg = new T.Mesh(legGeometry, legMaterial);
+    rightLeg.position.set(0.18 * scale, -0.4 * scale, 0);
+    group.add(rightLeg);
+
+    // Black boots
+    const bootGeometry = new T.BoxGeometry(0.32 * scale, 0.18 * scale, 0.45 * scale);
+    const bootMaterial = new T.MeshStandardMaterial({
+      color: 0x000000,
+      roughness: 0.4
+    });
+
+    const leftBoot = new T.Mesh(bootGeometry, bootMaterial);
+    leftBoot.position.set(-0.18 * scale, -0.85 * scale, 0.05 * scale);
+    group.add(leftBoot);
+
+    const rightBoot = new T.Mesh(bootGeometry, bootMaterial);
+    rightBoot.position.set(0.18 * scale, -0.85 * scale, 0.05 * scale);
+    group.add(rightBoot);
+
+    super("ChaseCharacter", group);
+
+    this.animationTime = 0;
+    this.leftArm = leftArm;
+    this.rightArm = rightArm;
+    this.leftLeg = leftLeg;
+    this.rightLeg = rightLeg;
+    this.targetDistance = -8; // Stay 8 units behind player
+  }
+
+  update(delta, playerZ) {
+    // Running animation
+    this.animationTime += 0.25; // Slightly faster than player (catching up)
+
+    const swingAmount = 0.7;
+    const armSwing = Math.sin(this.animationTime) * swingAmount;
+    const legSwing = Math.sin(this.animationTime) * swingAmount;
+
+    this.leftArm.rotation.x = armSwing;
+    this.rightArm.rotation.x = -armSwing;
+    this.leftLeg.rotation.x = legSwing;
+    this.rightLeg.rotation.x = -legSwing;
+
+    // Follow player but stay behind
+    const targetZ = playerZ + this.targetDistance;
+    this.objects[0].position.z += (targetZ - this.objects[0].position.z) * 0.05;
+  }
+}
+
 // Main Runner Game Controller
 export class RunnerGame extends GrObject {
   constructor(params = {}) {
@@ -460,6 +604,11 @@ export class RunnerGame extends GrObject {
     group.add(this.player.objects[0]);
     this.player.objects[0].position.set(0, 0, 0);
 
+    // Add chase character
+    this.chaseCharacter = new ChaseCharacter();
+    group.add(this.chaseCharacter.objects[0]);
+    this.chaseCharacter.objects[0].position.set(0, 0, -8);
+
     // Generate initial segments
     this.generateInitialRoad();
 
@@ -478,6 +627,11 @@ export class RunnerGame extends GrObject {
 
     this.coinSpawnCounter = 0;
     this.coinSpawnInterval = 15; // Spawn coins more frequently
+
+    // Start animation state
+    this.startAnimationActive = true;
+    this.startAnimationTime = 0;
+    this.startAnimationDuration = 2.5; // 2.5 seconds
   }
 
   generateInitialRoad() {
@@ -726,8 +880,44 @@ export class RunnerGame extends GrObject {
   }
 
   update(delta) {
+    // Handle start animation
+    if (this.startAnimationActive) {
+      this.startAnimationTime += delta / 1000; // Convert to seconds
+
+      if (this.startAnimationTime < this.startAnimationDuration) {
+        // During start animation
+        const progress = this.startAnimationTime / this.startAnimationDuration;
+
+        // Player starts looking back (caught), then turns to run
+        if (progress < 0.4) {
+          // Looking back nervously
+          this.player.objects[0].rotation.y = Math.PI * 0.3 * Math.sin(progress * 10);
+        } else {
+          // Turn forward and start running
+          this.player.objects[0].rotation.y = 0;
+        }
+
+        // Chase character starts closer then backs up
+        const chaseZ = -3 + (progress * -5); // Moves from -3 to -8
+        this.chaseCharacter.objects[0].position.z = chaseZ;
+
+        // Camera zooms out during start
+        this.camera.position.z = -5 + (1 - progress) * -2;
+
+        return false; // Don't check collisions during start animation
+      } else {
+        // Animation complete
+        this.startAnimationActive = false;
+        this.player.objects[0].rotation.y = 0;
+        this.camera.position.z = -5;
+      }
+    }
+
     // Update player
     this.player.update(delta);
+
+    // Update chase character
+    this.chaseCharacter.update(delta, this.player.objects[0].position.z);
 
     // Move everything backward (player moves forward)
     this.distance += this.speed;
