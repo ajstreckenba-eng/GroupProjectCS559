@@ -37,7 +37,7 @@ export function sampleSkyscraper(random, width, depth) {
   let levelWidth = width;
   let levelDepth = depth;
 
-  let levelHeight = Math.pow(sampleUniform(random, 2, 4), 1.5);
+  let levelHeight = Math.pow(sampleUniform(random, 4, 8), 1.5);
   let height = 0;
 
   for (let i = 0; i < levelCount; i++) {
@@ -118,13 +118,16 @@ export class GrSkyscraper extends GrObject {
     const fogParams = params.fogParams || {
       color: new T.Color(0xffffff),
       near: 0,
-      far: 50,
+      far: 15,
     };
 
     const isNightMode = params.isNightMode || false;
 
     // Use window material instead of plain cream stone
-    const baseMaterial = createBuildingMaterialWithWindows(fogParams, isNightMode);
+    const baseMaterial = createBuildingMaterialWithWindows(
+      fogParams,
+      isNightMode,
+    );
 
     let accentMaterial;
     if (params.accentMaterial == "bronze") {

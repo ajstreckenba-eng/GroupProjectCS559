@@ -10,8 +10,9 @@ import { load3DModel } from "./loader.js";
 
 // Player character for the runner game
 export class Player extends GrObject {
-  constructor() {
+  constructor(roadHeight) {
     const group = new T.Group();
+
     super("Player", group);
 
     // --- GAMEPLAY VARIABLES ---
@@ -22,7 +23,7 @@ export class Player extends GrObject {
     this.isJumping = false;
     this.isSliding = false;
     this.jumpVelocity = 0;
-    this.baseY = 0;
+    this.baseY = roadHeight;
     this.slideTimer = 0;
 
     // --- ANIMATION VARIABLES ---
@@ -114,7 +115,43 @@ export class Player extends GrObject {
       }
     }
 
+<<<<<<< HEAD
     // 2. PHYSICS: HANDLE JUMPING GRAVITY
+=======
+    const currentX = this.lanePositions[this.targetLane];
+    const targetX = currentX;
+    this.objects[0].position.x += (targetX - this.objects[0].position.x) * 0.2;
+
+    // Running animation - swing arms and legs
+    if (!this.isJumping && !this.isSliding) {
+      this.animationTime += 0.2; // Animation speed
+
+      const swingAmount = 0.6; // How far arms/legs swing
+      const armSwing = Math.sin(this.animationTime) * swingAmount;
+      const legSwing = Math.sin(this.animationTime) * swingAmount;
+
+      // Arms swing opposite to legs
+      this.leftArm.rotation.x = armSwing;
+      this.rightArm.rotation.x = -armSwing;
+
+      // Legs swing
+      this.leftLeg.rotation.x = legSwing;
+      this.rightLeg.rotation.x = -legSwing;
+
+      // Add slight body bob
+      this.body.position.y =
+        0.75 * 0.5 + Math.abs(Math.sin(this.animationTime * 2)) * 0.03;
+    } else {
+      // Reset animation when jumping or sliding
+      this.leftArm.rotation.x = 0;
+      this.rightArm.rotation.x = 0;
+      this.leftLeg.rotation.x = 0;
+      this.rightLeg.rotation.x = 0;
+      this.body.position.y = 0.75 * 0.5;
+    }
+
+    // Handle jumping
+>>>>>>> b0adc1a4025e2ff5b75f3fcfc47fa8979f17d2b7
     if (this.isJumping) {
       this.jumpVelocity -= 0.01; // Gravity
       this.objects[0].position.y += this.jumpVelocity;
@@ -170,18 +207,18 @@ export class Player extends GrObject {
 
 // Obstacle class (Cars moving toward player)
 export class Obstacle extends GrObject {
-  constructor(lane, type = 'car', position = { x: 0, y: 0, z: 0 }) {
+  constructor(lane, type = "car", position = { x: 0, y: 0, z: 0 }) {
     const group = new T.Group();
 
     let geometry, material, mesh;
 
-    if (type === 'box') {
+    if (type === "box") {
       // Overhead obstacle - must slide under - TALLER and more obvious
       geometry = new T.BoxGeometry(1.5, 0.6, 1.5);
       material = new T.MeshStandardMaterial({
         color: 0xff4444,
         roughness: 0.5,
-        metalness: 0.3
+        metalness: 0.3,
       });
       mesh = new T.Mesh(geometry, material);
       mesh.position.y = 1.2; // Much higher up - must slide to avoid
@@ -190,7 +227,7 @@ export class Obstacle extends GrObject {
       const stripeGeom = new T.BoxGeometry(0.25, 0.62, 1.52);
       const stripeMat = new T.MeshStandardMaterial({
         color: 0xffff00,
-        emissive: 0x444400
+        emissive: 0x444400,
       });
       const stripe1 = new T.Mesh(stripeGeom, stripeMat);
       stripe1.position.set(-0.5, 1.2, 0);
@@ -203,7 +240,7 @@ export class Obstacle extends GrObject {
       const arrowMat = new T.MeshStandardMaterial({
         color: 0xffffff,
         emissive: 0xffffff,
-        emissiveIntensity: 0.5
+        emissiveIntensity: 0.5,
       });
 
       // Arrow shaft (cylinder)
@@ -218,18 +255,18 @@ export class Obstacle extends GrObject {
       head.position.set(0, 0.9, 0);
       head.rotation.x = Math.PI; // Point downward
       group.add(head);
-    } else if (type === 'barrier') {
+    } else if (type === "barrier") {
       geometry = new T.BoxGeometry(1, 0.5, 0.8);
       material = new T.MeshStandardMaterial({ color: 0xffaa00 });
       mesh = new T.Mesh(geometry, material);
       mesh.position.y = 0.25;
-    } else if (type === 'car') {
+    } else if (type === "car") {
       // Create realistic car with metallic paint texture
       const createCarTexture = (baseColor) => {
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         canvas.width = 128;
         canvas.height = 128;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
 
         // Base color
         ctx.fillStyle = baseColor;
@@ -237,9 +274,9 @@ export class Obstacle extends GrObject {
 
         // Add metallic shine effect
         const gradient = ctx.createLinearGradient(0, 0, 128, 128);
-        gradient.addColorStop(0, 'rgba(255,255,255,0.3)');
-        gradient.addColorStop(0.5, 'rgba(255,255,255,0)');
-        gradient.addColorStop(1, 'rgba(0,0,0,0.2)');
+        gradient.addColorStop(0, "rgba(255,255,255,0.3)");
+        gradient.addColorStop(0.5, "rgba(255,255,255,0)");
+        gradient.addColorStop(1, "rgba(0,0,0,0.2)");
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, 128, 128);
 
@@ -248,33 +285,35 @@ export class Obstacle extends GrObject {
 
       // Car shape - made BIGGER for better visibility
       const bodyGeom = new T.BoxGeometry(1.2, 0.8, 2.5);
-      const carColors = ['#cc0000', '#00cc00', '#0000cc', '#cccc00', '#cc00cc'];
-      const carTexture = createCarTexture(carColors[Math.floor(Math.random() * carColors.length)]);
+      const carColors = ["#cc0000", "#00cc00", "#0000cc", "#cccc00", "#cc00cc"];
+      const carTexture = createCarTexture(
+        carColors[Math.floor(Math.random() * carColors.length)],
+      );
 
       const bodyMat = new T.MeshStandardMaterial({
         map: carTexture,
         roughness: 0.3,
-        metalness: 0.8
+        metalness: 0.8,
       });
       mesh = new T.Mesh(bodyGeom, bodyMat);
       mesh.position.y = 0.4;
 
       // Car roof with window texture
       const roofGeom = new T.BoxGeometry(1.0, 0.5, 1.5);
-      const windowCanvas = document.createElement('canvas');
+      const windowCanvas = document.createElement("canvas");
       windowCanvas.width = 64;
       windowCanvas.height = 64;
-      const winCtx = windowCanvas.getContext('2d');
-      winCtx.fillStyle = '#1a1a2e';
+      const winCtx = windowCanvas.getContext("2d");
+      winCtx.fillStyle = "#1a1a2e";
       winCtx.fillRect(0, 0, 64, 64);
       // Add shine
-      winCtx.fillStyle = 'rgba(255,255,255,0.1)';
+      winCtx.fillStyle = "rgba(255,255,255,0.1)";
       winCtx.fillRect(5, 5, 54, 54);
       const windowTexture = new T.CanvasTexture(windowCanvas);
       const roofMat = new T.MeshStandardMaterial({
         map: windowTexture,
         roughness: 0.2,
-        metalness: 0.5
+        metalness: 0.5,
       });
       const roof = new T.Mesh(roofGeom, roofMat);
       roof.position.y = 0.85;
@@ -285,7 +324,7 @@ export class Obstacle extends GrObject {
       const headlightMat = new T.MeshStandardMaterial({
         color: 0xffffaa,
         emissive: 0xffffaa,
-        emissiveIntensity: 0.5
+        emissiveIntensity: 0.5,
       });
       const leftHeadlight = new T.Mesh(headlightGeom, headlightMat);
       leftHeadlight.position.set(-0.35, 0, 1.3);
@@ -305,9 +344,9 @@ export class Obstacle extends GrObject {
 
     this.lane = lane;
     this.type = type;
-    this.canJumpOver = (type === 'barrier');
-    this.canSlideUnder = (type === 'box'); // Box is overhead - must slide under
-    this.speed = type === 'car' ? 0.25 : 0; // Cars move toward player faster
+    this.canJumpOver = type === "barrier";
+    this.canSlideUnder = type === "box"; // Box is overhead - must slide under
+    this.speed = type === "car" ? 0.25 : 0; // Cars move toward player faster
   }
 
   update(baseSpeed) {
@@ -334,7 +373,7 @@ export class Coin extends GrObject {
       emissive: 0xffaa00,
       emissiveIntensity: 0.5,
       metalness: 0.8,
-      roughness: 0.2
+      roughness: 0.2,
     });
 
     const coin = new T.Mesh(coinGeometry, coinMaterial);
@@ -370,11 +409,15 @@ export class ChaseCharacter extends GrObject {
 
     // Security guard appearance
     // Body with dark blue uniform
-    const bodyGeometry = new T.BoxGeometry(0.7 * scale, 1.6 * scale, 0.5 * scale);
+    const bodyGeometry = new T.BoxGeometry(
+      0.7 * scale,
+      1.6 * scale,
+      0.5 * scale,
+    );
     const bodyMaterial = new T.MeshStandardMaterial({
       color: 0x1a1a4d,
       roughness: 0.8,
-      metalness: 0.1
+      metalness: 0.1,
     });
     const body = new T.Mesh(bodyGeometry, bodyMaterial);
     body.position.y = 0.8 * scale;
@@ -384,39 +427,52 @@ export class ChaseCharacter extends GrObject {
     const headGeometry = new T.SphereGeometry(0.35 * scale);
     const headMaterial = new T.MeshStandardMaterial({
       color: 0xffcc99,
-      roughness: 0.7
+      roughness: 0.7,
     });
     const head = new T.Mesh(headGeometry, headMaterial);
     head.position.y = 2.0 * scale;
     group.add(head);
 
     // Police cap
-    const capGeometry = new T.CylinderGeometry(0.38 * scale, 0.35 * scale, 0.2 * scale, 16);
+    const capGeometry = new T.CylinderGeometry(
+      0.38 * scale,
+      0.35 * scale,
+      0.2 * scale,
+      16,
+    );
     const capMaterial = new T.MeshStandardMaterial({
       color: 0x0a0a2a,
-      roughness: 0.9
+      roughness: 0.9,
     });
     const cap = new T.Mesh(capGeometry, capMaterial);
     cap.position.y = 2.3 * scale;
     group.add(cap);
 
     // Badge (yellow star on chest)
-    const badgeGeometry = new T.BoxGeometry(0.15 * scale, 0.15 * scale, 0.05 * scale);
+    const badgeGeometry = new T.BoxGeometry(
+      0.15 * scale,
+      0.15 * scale,
+      0.05 * scale,
+    );
     const badgeMaterial = new T.MeshStandardMaterial({
       color: 0xffdd00,
       emissive: 0xffaa00,
       emissiveIntensity: 0.5,
-      metalness: 0.8
+      metalness: 0.8,
     });
     const badge = new T.Mesh(badgeGeometry, badgeMaterial);
     badge.position.set(0, 1.2 * scale, 0.3 * scale);
     group.add(badge);
 
     // Arms
-    const armGeometry = new T.BoxGeometry(0.22 * scale, 0.9 * scale, 0.22 * scale);
+    const armGeometry = new T.BoxGeometry(
+      0.22 * scale,
+      0.9 * scale,
+      0.22 * scale,
+    );
     const armMaterial = new T.MeshStandardMaterial({
       color: 0x1a1a4d,
-      roughness: 0.8
+      roughness: 0.8,
     });
 
     const leftArm = new T.Mesh(armGeometry, armMaterial);
@@ -428,10 +484,14 @@ export class ChaseCharacter extends GrObject {
     group.add(rightArm);
 
     // Legs
-    const legGeometry = new T.BoxGeometry(0.28 * scale, 0.8 * scale, 0.28 * scale);
+    const legGeometry = new T.BoxGeometry(
+      0.28 * scale,
+      0.8 * scale,
+      0.28 * scale,
+    );
     const legMaterial = new T.MeshStandardMaterial({
       color: 0x0a0a2a,
-      roughness: 0.9
+      roughness: 0.9,
     });
 
     const leftLeg = new T.Mesh(legGeometry, legMaterial);
@@ -443,10 +503,14 @@ export class ChaseCharacter extends GrObject {
     group.add(rightLeg);
 
     // Black boots
-    const bootGeometry = new T.BoxGeometry(0.32 * scale, 0.18 * scale, 0.45 * scale);
+    const bootGeometry = new T.BoxGeometry(
+      0.32 * scale,
+      0.18 * scale,
+      0.45 * scale,
+    );
     const bootMaterial = new T.MeshStandardMaterial({
       color: 0x000000,
-      roughness: 0.4
+      roughness: 0.4,
     });
 
     const leftBoot = new T.Mesh(bootGeometry, bootMaterial);
@@ -498,9 +562,10 @@ export class RunnerGame extends GrObject {
     this.roadWidth = params.roadWidth || 2;
     this.fogParams = params.fogParams;
     this.isNightMode = params.isNightMode || false;
+    this.roadHeight = params.roadHeight || 8;
 
     // Game state
-    this.player = new Player();
+    this.player = new Player(this.roadHeight);
     this.obstacles = [];
     this.coins = [];
     this.roadSegments = [];
@@ -524,12 +589,12 @@ export class RunnerGame extends GrObject {
 
     // Add player to scene
     group.add(this.player.objects[0]);
-    this.player.objects[0].position.set(0, 0, 0);
+    this.player.objects[0].position.set(0, this.roadHeight, 0);
 
     // Add chase character
     this.chaseCharacter = new ChaseCharacter();
     group.add(this.chaseCharacter.objects[0]);
-    this.chaseCharacter.objects[0].position.set(0, 0, -8);
+    this.chaseCharacter.objects[0].position.set(0, this.roadHeight, -8);
 
     // Generate initial segments
     this.generateInitialRoad();
@@ -539,10 +604,10 @@ export class RunnerGame extends GrObject {
       60,
       window.innerWidth / window.innerHeight,
       0.1,
-      1000
+      1000,
     );
-    this.camera.position.set(0, 3, -5);
-    this.camera.lookAt(0, 1, 0);
+    this.camera.position.set(0, this.roadHeight + 3, -5);
+    this.camera.lookAt(0, this.roadHeight + 1, 0);
 
     this.obstacleSpawnCounter = 0;
     this.obstacleSpawnInterval = 25; // Spawn every N units - more frequent
@@ -579,13 +644,13 @@ export class RunnerGame extends GrObject {
     const roadGeometry = new T.PlaneGeometry(3, this.segmentLength);
 
     // Create asphalt texture procedurally
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = 256;
     canvas.height = 256;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
 
     // Dark gray asphalt base
-    ctx.fillStyle = '#2a2a2a';
+    ctx.fillStyle = "#2a2a2a";
     ctx.fillRect(0, 0, 256, 256);
 
     // Add some noise for texture
@@ -605,12 +670,12 @@ export class RunnerGame extends GrObject {
     const roadMaterial = new T.MeshStandardMaterial({
       map: roadTexture,
       roughness: 0.9,
-      metalness: 0.1
+      metalness: 0.1,
     });
 
     const road = new T.Mesh(roadGeometry, roadMaterial);
     road.rotation.x = -Math.PI / 2;
-    road.position.set(0, -0.01, zPosition);
+    road.position.set(0, this.roadHeight, zPosition);
 
     this.objects[0].add(road);
     this.roadSegments.push({ mesh: road, z: zPosition });
@@ -622,10 +687,14 @@ export class RunnerGame extends GrObject {
         const markerGeometry = new T.BoxGeometry(0.1, 0.02, 0.8);
         const markerMaterial = new T.MeshStandardMaterial({
           color: 0xffff00,
-          emissive: 0x444400
+          emissive: 0x444400,
         });
         const marker = new T.Mesh(markerGeometry, markerMaterial);
-        marker.position.set(lane, 0, zPosition - this.segmentLength/2 + dash);
+        marker.position.set(
+          lane,
+          this.roadHeight + 1e-2,
+          zPosition - this.segmentLength / 2 + dash,
+        );
         this.objects[0].add(marker);
       }
     }
@@ -644,18 +713,26 @@ export class RunnerGame extends GrObject {
       this.nextTurnDistance = this.distance + 30 + (this.random.next() % 40);
     }
 
-    for (let side = -1; side <= 1; side += 2) { // -1 = left, 1 = right
+    for (let side = -1; side <= 1; side += 2) {
+      // -1 = left, 1 = right
       for (let depth = 0; depth < blockDepth; depth++) {
         // Apply curve offset based on path angle
-        const curveOffset = Math.sin(this.pathAngle) * depth * 2;
+        const curveOffset = Math.sin(this.pathAngle) * depth * 2 + 2 * side;
         const x = side * (3 + depth * spacing) + curveOffset;
-        const z = zPosition + (this.random.next() % this.segmentLength) - this.segmentLength / 2;
+        const z =
+          zPosition +
+          (this.random.next() % this.segmentLength) -
+          this.segmentLength / 2;
 
         // Use actual procedurally generated skyscrapers
         const buildingWidth = 2 + (this.random.next() % 20) / 10;
         const buildingDepth = 2 + (this.random.next() % 20) / 10;
 
-        const skyscraperData = sampleSkyscraper(this.random, buildingWidth, buildingDepth);
+        const skyscraperData = sampleSkyscraper(
+          this.random,
+          buildingWidth,
+          buildingDepth,
+        );
         skyscraperData.x = x;
         skyscraperData.z = z;
         skyscraperData.y = 0;
@@ -668,7 +745,7 @@ export class RunnerGame extends GrObject {
         this.cityBlocks.push({
           mesh: skyscraper.objects[0],
           z: z,
-          grObject: skyscraper
+          grObject: skyscraper,
         });
       }
     }
@@ -686,7 +763,8 @@ export class RunnerGame extends GrObject {
     }
 
     // Place obstacles in first numObstacles lanes
-    for (let i = 0; i < numObstacles && i < 2; i++) { // Max 2 obstacles to ensure path
+    for (let i = 0; i < numObstacles && i < 2; i++) {
+      // Max 2 obstacles to ensure path
       const lane = lanes[i];
       const laneX = this.player.lanePositions[lane];
 
@@ -694,14 +772,18 @@ export class RunnerGame extends GrObject {
       const rand = this.random.next() % 100;
       let type;
       if (rand < 60) {
-        type = 'car';
+        type = "car";
       } else if (rand < 85) {
-        type = 'box'; // Overhead - must slide
+        type = "box"; // Overhead - must slide
       } else {
-        type = 'barrier'; // Ground - must jump
+        type = "barrier"; // Ground - must jump
       }
 
-      const obstacle = new Obstacle(lane, type, new T.Vector3(laneX, 0, zPosition));
+      const obstacle = new Obstacle(
+        lane,
+        type,
+        new T.Vector3(laneX, this.roadHeight, zPosition),
+      );
       this.objects[0].add(obstacle.objects[0]);
       this.obstacles.push(obstacle);
     }
@@ -732,7 +814,10 @@ export class RunnerGame extends GrObject {
           currentLane = targetLane;
         }
         const laneX = this.player.lanePositions[currentLane];
-        const coin = new Coin(currentLane, new T.Vector3(laneX, 1, zPosition + i * 2));
+        const coin = new Coin(
+          currentLane,
+          new T.Vector3(laneX, 1, zPosition + i * 2),
+        );
         this.objects[0].add(coin.objects[0]);
         this.coins.push(coin);
       }
@@ -741,7 +826,10 @@ export class RunnerGame extends GrObject {
       for (let i = 0; i < 12; i++) {
         const lane = Math.floor(i / 4) % 3; // Change lane every 4 coins
         const laneX = this.player.lanePositions[lane];
-        const coin = new Coin(lane, new T.Vector3(laneX, 1, zPosition + i * 2));
+        const coin = new Coin(
+          lane,
+          new T.Vector3(laneX, this.roadHeight + 1, zPosition + i * 2),
+        );
         this.objects[0].add(coin.objects[0]);
         this.coins.push(coin);
       }
@@ -816,14 +904,15 @@ export class RunnerGame extends GrObject {
         // Player starts looking back (caught), then turns to run
         if (progress < 0.4) {
           // Looking back nervously
-          this.player.objects[0].rotation.y = Math.PI * 0.3 * Math.sin(progress * 10);
+          this.player.objects[0].rotation.y =
+            Math.PI * 0.3 * Math.sin(progress * 10);
         } else {
           // Turn forward and start running
           this.player.objects[0].rotation.y = 0;
         }
 
         // Chase character starts closer then backs up
-        const chaseZ = -3 + (progress * -5); // Moves from -3 to -8
+        const chaseZ = -3 + progress * -5; // Moves from -3 to -8
         this.chaseCharacter.objects[0].position.z = chaseZ;
 
         // Camera zooms out during start
@@ -881,7 +970,7 @@ export class RunnerGame extends GrObject {
     }
 
     // Remove segments that are too far behind
-    this.roadSegments = this.roadSegments.filter(segment => {
+    this.roadSegments = this.roadSegments.filter((segment) => {
       if (segment.z < -this.segmentsBehind * this.segmentLength) {
         this.objects[0].remove(segment.mesh);
         return false;
@@ -889,7 +978,7 @@ export class RunnerGame extends GrObject {
       return true;
     });
 
-    this.cityBlocks = this.cityBlocks.filter(block => {
+    this.cityBlocks = this.cityBlocks.filter((block) => {
       if (block.z < -this.segmentsBehind * this.segmentLength) {
         this.objects[0].remove(block.mesh);
         return false;
@@ -897,7 +986,7 @@ export class RunnerGame extends GrObject {
       return true;
     });
 
-    this.obstacles = this.obstacles.filter(obstacle => {
+    this.obstacles = this.obstacles.filter((obstacle) => {
       if (obstacle.objects[0].position.z < -10) {
         this.objects[0].remove(obstacle.objects[0]);
         return false;
@@ -905,7 +994,7 @@ export class RunnerGame extends GrObject {
       return true;
     });
 
-    this.coins = this.coins.filter(coin => {
+    this.coins = this.coins.filter((coin) => {
       if (coin.objects[0].position.z < -10) {
         this.objects[0].remove(coin.objects[0]);
         return false;
@@ -914,9 +1003,10 @@ export class RunnerGame extends GrObject {
     });
 
     // Generate new segments ahead
-    const furthestZ = this.roadSegments.length > 0
-      ? Math.max(...this.roadSegments.map(s => s.z))
-      : 0;
+    const furthestZ =
+      this.roadSegments.length > 0
+        ? Math.max(...this.roadSegments.map((s) => s.z))
+        : 0;
 
     if (furthestZ < this.segmentsAhead * this.segmentLength) {
       const newZ = furthestZ + this.segmentLength;

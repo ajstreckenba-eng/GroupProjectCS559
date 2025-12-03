@@ -122,7 +122,7 @@ export function createArtDecoMaterial(fogParams = {}) {
 export function createBronzeMaterial(fogParams = {}) {
   const fogColor = fogParams.color || new T.Color(0xffffff);
   const fogNear = fogParams.near !== undefined ? fogParams.near : 0;
-  const fogFar = fogParams.far !== undefined ? fogParams.far : 8;
+  const fogFar = fogParams.far !== undefined ? fogParams.far : 10;
 
   const vertexShader = `
     varying vec3 vWorldPosition;
@@ -205,10 +205,13 @@ export function createBronzeMaterial(fogParams = {}) {
   });
 }
 
-export function createBuildingMaterialWithWindows(fogParams = {}, isNightMode = false) {
+export function createBuildingMaterialWithWindows(
+  fogParams = {},
+  isNightMode = false,
+) {
   const fogColor = fogParams.color || new T.Color(0xffffff);
   const fogNear = fogParams.near !== undefined ? fogParams.near : 0;
-  const fogFar = fogParams.far !== undefined ? fogParams.far : 50;
+  const fogFar = fogParams.far !== undefined ? fogParams.far : 10;
 
   const vertexShader = `
     varying vec3 vWorldPosition;
@@ -369,7 +372,7 @@ export function createBuildingMaterialWithWindows(fogParams = {}, isNightMode = 
 export function createCreamStoneMaterial(fogParams = {}) {
   const fogColor = fogParams.color || new T.Color(0xffffff);
   const fogNear = fogParams.near !== undefined ? fogParams.near : 0;
-  const fogFar = fogParams.far !== undefined ? fogParams.far : 50;
+  const fogFar = fogParams.far !== undefined ? fogParams.far : 10;
 
   const vertexShader = `
     varying vec3 vWorldPosition;
