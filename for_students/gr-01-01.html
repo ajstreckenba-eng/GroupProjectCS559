@@ -2,21 +2,78 @@
 <html>
   <head>
     <link rel="stylesheet" href="../libs/CS559/style559.css" />
+    <link rel="stylesheet" href="game.css" />
   </head>
 
   <body>
-    <div id="div1"></div>
-<script type="importmap">
+    <!-- Start Screen -->
+    <div id="start-screen" class="screen">
+      <div class="screen-content">
+        <h1>City Runner</h1>
+        <div class="high-score">High Score: <span id="high-score-value">0</span></div>
+
+        <div class="mode-selector">
+          <h2>Time of Day</h2>
+          <div class="mode-buttons">
+            <button id="day-mode-button" class="mode-button active">☀️ Day Mode</button>
+            <button id="night-mode-button" class="mode-button">🌙 Night Mode</button>
+          </div>
+        </div>
+
+        <div class="controls-info">
+          <h2>Controls</h2>
+          <div class="control-item">
+            <span class="key">←</span> Move Left
+          </div>
+          <div class="control-item">
+            <span class="key">→</span> Move Right
+          </div>
+          <div class="control-item">
+            <span class="key">↑</span> Jump
+          </div>
+          <div class="control-item">
+            <span class="key">↓</span> Slide
+          </div>
+        </div>
+        <button id="start-button" class="game-button">Start Game</button>
+      </div>
+    </div>
+
+    <!-- Game Container -->
+    <div id="game-container" class="screen" style="display: none;">
+      <div id="div1"></div>
+      <div id="game-overlay">
+        <div id="score-display">Score: <span id="score-value">0</span></div>
+        <div id="coin-display">Coins: <span id="coin-value">0</span></div>
+        <button id="pause-button" class="overlay-button">Pause</button>
+      </div>
+      <!-- The screenshot and record buttons -->
+      <div id="game-controls">
+        <button onclick="screenshot('canvas')">Screenshot</button>
+        <button onclick="record('canvas','time')">Record</button>
+        <input id="time" type="text" size="2" value="10"> seconds.
+      </div>
+    </div>
+
+    <!-- Pause Screen -->
+    <div id="pause-screen" class="screen" style="display: none;">
+      <div class="screen-content">
+        <h1>Paused</h1>
+        <div class="pause-score">Current Score: <span id="pause-score-value">0</span></div>
+        <div class="pause-high-score">High Score: <span id="pause-high-score-value">0</span></div>
+        <button id="resume-button" class="game-button">Resume</button>
+        <button id="restart-button" class="game-button">Restart</button>
+      </div>
+    </div>
+
+    <script type="importmap">
       {
           "imports": {
               "three": "../libs/CS559-Three/build/three.module.js"
           }
       }
-  </script>
+    </script>
     <script src="gr-01-01.js" type="module"></script>
-<!-- The screenshot and record buttons -->
-    <br><button onclick="screenshot('canvas')">Screenshot</button> <button
-        onclick="record('canvas','time')">Record</button> <input id="time" type="text" size="2" value="10"> seconds.
     <script type="module">
         import { screenshot, record } from "../libs/CS559/saveCanvas.js";
         window.screenshot = screenshot;

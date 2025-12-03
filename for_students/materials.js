@@ -205,10 +205,140 @@ export function createBronzeMaterial(fogParams = {}) {
   });
 }
 
+export function createBuildingMaterialWithWindows(fogParams = {}, isNightMode = false) {
+  const fogColor = fogParams.color || new T.Color(0xffffff);
+  const fogNear = fogParams.near !== undefined ? fogParams.near : 0;
+  const fogFar = fogParams.far !== undefined ? fogParams.far : 50;
+
+  const vertexShader = `
+    varying vec3 vWorldPosition;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+    varying vec2 vUv;
+
+    void main() {
+      vUv = uv;
+      vNormal = normalMatrix * normal;
+      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+      vWorldPosition = worldPosition.xyz;
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      vViewPosition = -mvPosition.xyz;
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  `;
+
+  const fragmentShader = `
+    uniform vec3 fogColor;
+    uniform float fogNear;
+    uniform float fogFar;
+    uniform vec3 ambientLight;
+    uniform vec3 directionalLightDir;
+    uniform vec3 directionalLightColor;
+    uniform vec3 buildingColor;
+    uniform float shininess;
+    uniform bool isNightMode;
+
+    varying vec3 vWorldPosition;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+    varying vec2 vUv;
+
+    // Random function for light variation
+    float random(vec2 st) {
+      return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+    }
+
+    void main() {
+      // Create window pattern
+      vec2 windowUV = fract(vUv * vec2(4.0, 12.0)); // 4 windows wide, 12 floors tall
+
+      // Window vs wall determination
+      bool isWindow = (windowUV.x > 0.15 && windowUV.x < 0.85 && windowUV.y > 0.1 && windowUV.y < 0.9);
+
+      // Random light on/off for each window
+      float windowId = floor(vUv.x * 4.0) + floor(vUv.y * 12.0) * 4.0;
+      float lightOn = random(vec2(windowId, 0.0));
+      bool windowLit = lightOn > 0.3; // 70% of windows are lit
+
+      // Base building color (cream stone)
+      vec3 wallColor = buildingColor;
+
+      // Window colors
+      vec3 windowColor;
+      if (isNightMode && windowLit) {
+        // Warm yellow/orange light at night
+        windowColor = vec3(1.0, 0.9, 0.6) * 1.5;
+      } else {
+        // Dark blue/black glass during day or when lights are off
+        windowColor = vec3(0.1, 0.15, 0.2);
+      }
+
+      // Mix between wall and window
+      vec3 baseColor = isWindow ? windowColor : wallColor;
+
+      // Normalize the normal
+      vec3 N = normalize(vNormal);
+
+      // Ambient component
+      vec3 ambient = ambientLight * baseColor;
+
+      // Directional light - diffuse component (less effect on lit windows)
+      vec3 L = normalize(directionalLightDir);
+      float NdotL = max(dot(N, L), 0.0);
+      vec3 diffuse = directionalLightColor * baseColor * NdotL;
+
+      // Windows emit light at night
+      if (isWindow && isNightMode && windowLit) {
+        diffuse = baseColor; // Emissive windows
+        ambient = baseColor * 0.5;
+      }
+
+      // Specular component (Blinn-Phong) - minimal for windows
+      vec3 V = normalize(vViewPosition);
+      vec3 H = normalize(L + V);
+      float NdotH = max(dot(N, H), 0.0);
+      float specularStrength = pow(NdotH, shininess);
+
+      vec3 specular = vec3(0.0);
+      if (!isWindow) {
+        specular = directionalLightColor * vec3(1.0) * specularStrength * 0.1;
+      }
+
+      // Combine lighting
+      vec3 color = ambient + diffuse + specular;
+
+      gl_FragColor = vec4(color, 1.0);
+
+      // Height-based fog calculation
+      float fogHeight = vWorldPosition.y;
+      float fogFactor = smoothstep(fogNear, fogFar, fogHeight);
+      gl_FragColor.rgb = mix(fogColor, gl_FragColor.rgb, fogFactor);
+    }
+  `;
+
+  const uniforms = {
+    fogColor: { value: fogColor },
+    fogNear: { value: fogNear },
+    fogFar: { value: fogFar },
+    ambientLight: { value: ambientLight },
+    directionalLightDir: { value: directionalLightDir },
+    directionalLightColor: { value: directionalLightColor },
+    buildingColor: { value: new T.Color(0.811, 0.745, 0.64) },
+    shininess: { value: 8.0 },
+    isNightMode: { value: isNightMode },
+  };
+
+  return new T.ShaderMaterial({
+    vertexShader: vertexShader,
+    fragmentShader: fragmentShader,
+    uniforms: uniforms,
+  });
+}
+
 export function createCreamStoneMaterial(fogParams = {}) {
   const fogColor = fogParams.color || new T.Color(0xffffff);
   const fogNear = fogParams.near !== undefined ? fogParams.near : 0;
-  const fogFar = fogParams.far !== undefined ? fogParams.far : 8;
+  const fogFar = fogParams.far !== undefined ? fogParams.far : 50;
 
   const vertexShader = `
     varying vec3 vWorldPosition;

@@ -6,6 +6,7 @@ import {
   createArtDecoMaterial,
   createBronzeMaterial,
   createCreamStoneMaterial,
+  createBuildingMaterialWithWindows,
 } from "./materials.js";
 
 function sampleLevel(random, width, depth, height) {
@@ -117,10 +118,13 @@ export class GrSkyscraper extends GrObject {
     const fogParams = params.fogParams || {
       color: new T.Color(0xffffff),
       near: 0,
-      far: 8,
+      far: 50,
     };
 
-    const baseMaterial = createCreamStoneMaterial(fogParams);
+    const isNightMode = params.isNightMode || false;
+
+    // Use window material instead of plain cream stone
+    const baseMaterial = createBuildingMaterialWithWindows(fogParams, isNightMode);
 
     let accentMaterial;
     if (params.accentMaterial == "bronze") {

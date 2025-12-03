@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>City Game</title>
+    <link rel="stylesheet" href="../libs/CS559/style559.css" />
+    <link rel="stylesheet" href="game.css" />
+  </head>
+
+  <body>
+    <!-- Start Screen -->
+    <div id="start-screen" class="screen">
+      <div class="screen-content">
+        <h1>City Explorer</h1>
+        <p>Explore the procedurally generated city</p>
+        <button id="start-button" class="game-button">Start Game</button>
+      </div>
+    </div>
+
+    <!-- Game Container -->
+    <div id="game-container" class="screen" style="display: none;">
+      <div id="div1"></div>
+      <div id="game-overlay">
+        <button id="pause-button" class="overlay-button">Pause</button>
+      </div>
+    </div>
+
+    <!-- Pause Screen -->
+    <div id="pause-screen" class="screen" style="display: none;">
+      <div class="screen-content">
+        <h1>Paused</h1>
+        <button id="resume-button" class="game-button">Resume</button>
+        <button id="restart-button" class="game-button">Restart</button>
+      </div>
+    </div>
+
+    <script type="importmap">
+      {
+          "imports": {
+              "three": "../libs/CS559-Three/build/three.module.js"
+          }
+      }
+    </script>
+    <script src="game.js" type="module"></script>
+  </body>
+</html>
