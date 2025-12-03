@@ -6,5 +6,6 @@ Character
 Trains
 City Animation
 Chase Character
+User Interaction
 (Optional) Obstacles
 (Optional) Coin system
