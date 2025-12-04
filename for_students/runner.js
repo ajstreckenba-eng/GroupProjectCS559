@@ -85,7 +85,7 @@ export class Player extends GrObject {
     // Only jump if we are currently on the ground
     if (!this.isJumping && !this.isSliding) {
       this.isJumping = true;
-      this.jumpVelocity = 0.20; // Physics upward force
+      this.jumpVelocity = 0.30; // Physics upward force (increased from 0.20 for faster jump)
 
       // ANIMATION: Switch from Run to Jump
       if (this.runAction && this.jumpAction) {
@@ -116,7 +116,7 @@ export class Player extends GrObject {
     }
     // 2. PHYSICS: HANDLE JUMPING GRAVITY
     if (this.isJumping) {
-      this.jumpVelocity -= 0.01; // Gravity
+      this.jumpVelocity -= 0.015; // Gravity (increased from 0.01 for faster fall)
       this.objects[0].position.y += this.jumpVelocity;
 
       // Check for Landing
@@ -143,13 +143,13 @@ export class Player extends GrObject {
       }
     }
 
-    // 4. LOGIC: LANE CHANGING
+    // 4. LOGIC: LANE CHANGING (faster movement)
     if (this.laneChangeProgress > 0) {
-      this.laneChangeProgress -= 0.1;
+      this.laneChangeProgress -= 0.15; // Faster progress decay
       if (this.laneChangeProgress < 0) this.laneChangeProgress = 0;
     }
     const targetX = this.lanePositions[this.targetLane];
-    this.objects[0].position.x += (targetX - this.objects[0].position.x) * 0.2;
+    this.objects[0].position.x += (targetX - this.objects[0].position.x) * 0.4; // Faster interpolation (was 0.2)
   }
 
   // Bounding box for collisions
@@ -177,7 +177,7 @@ export class Obstacle extends GrObject {
 
     if (type === "box") {
       // Overhead obstacle - must slide under - TALLER and more obvious
-      geometry = new T.BoxGeometry(1.5, 0.6, 1.5);
+      geometry = new T.BoxGeometry(1.0, 0.6, 1.0);
       material = new T.MeshStandardMaterial({
         color: 0xff4444,
         roughness: 0.5,
@@ -309,7 +309,8 @@ export class Obstacle extends GrObject {
     this.type = type;
     this.canJumpOver = type === "barrier";
     this.canSlideUnder = type === "box"; // Box is overhead - must slide under
-    this.speed = type === "car" ? 0.25 : 0; // Cars move toward player faster
+    // Cars drive toward player at same speed player moves forward
+    this.speed = type === "car" ? 1.0 : 0; // Cars get extra speed multiplier
   }
 
   update(baseSpeed) {
@@ -535,7 +536,10 @@ export class RunnerGame extends GrObject {
     this.cityBlocks = [];
     this.coinsCollected = 0;
 
-    this.speed = 0.15; // Forward movement speed - increased
+    this.speed = 0.25; // Forward movement speed - starts faster
+    this.baseSpeed = 0.25; // Starting speed
+    this.maxSpeed = 0.50; // Maximum speed cap
+    this.speedIncreaseRate = 0.00005; // How quickly speed increases
     this.distance = 0;
     this.segmentLength = 10;
     this.segmentsAhead = 20;
@@ -582,6 +586,9 @@ export class RunnerGame extends GrObject {
     this.startAnimationActive = true;
     this.startAnimationTime = 0;
     this.startAnimationDuration = 2.5; // 2.5 seconds
+
+    // Animation time for building materials
+    this.animationTime = 0;
   }
 
   generateInitialRoad() {
@@ -856,6 +863,20 @@ export class RunnerGame extends GrObject {
     // Always tick player animations so the model doesn't freeze
     this.player.update(delta);
 
+    // Update animation time for building materials (convert delta from ms to seconds)
+    this.animationTime += delta * 0.001;
+
+    // Update time uniform for all building materials
+    for (let block of this.cityBlocks) {
+      if (block.mesh) {
+        block.mesh.traverse((child) => {
+          if (child.material && child.material.userData && child.material.userData.timeUniform) {
+            child.material.userData.timeUniform.value = this.animationTime;
+          }
+        });
+      }
+    }
+
     // Handle start animation
     if (this.startAnimationActive) {
       this.startAnimationTime += delta / 1000; // Convert to seconds
@@ -892,6 +913,12 @@ export class RunnerGame extends GrObject {
 
     // Update chase character
     this.chaseCharacter.update(delta, this.player.objects[0].position.z);
+
+    // Gradually increase speed over time (progressive difficulty)
+    if (this.speed < this.maxSpeed) {
+      this.speed += this.speedIncreaseRate * delta;
+      this.speed = Math.min(this.speed, this.maxSpeed); // Cap at max speed
+    }
 
     // Move everything backward (player moves forward)
     this.distance += this.speed;

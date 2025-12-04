@@ -240,6 +240,7 @@ export function createBuildingMaterialWithWindows(
     uniform vec3 buildingColor;
     uniform float shininess;
     uniform bool isNightMode;
+    uniform float time;
 
     varying vec3 vWorldPosition;
     varying vec3 vNormal;
@@ -258,17 +259,39 @@ export function createBuildingMaterialWithWindows(
       // Window vs wall determination
       bool isWindow = (windowUV.x > 0.15 && windowUV.x < 0.85 && windowUV.y > 0.1 && windowUV.y < 0.9);
 
-      // Balcony determination (every 3rd floor, during day mode)
+      // Balcony determination (every 3rd floor, both day and night)
       float floorNum = floor(vUv.y * 12.0);
-      bool isBalconyFloor = mod(floorNum, 3.0) == 0.0 && !isNightMode;
-      // Balcony at bottom of floor (bigger and more visible)
-      bool isBalcony = isBalconyFloor && windowUV.y < 0.25 && windowUV.x > 0.15 && windowUV.x < 0.85;
+      bool isBalconyFloor = mod(floorNum, 3.0) == 0.0;
+      // Balcony at bottom of floor (bigger and more visible) - only visible in day mode
+      bool isBalcony = isBalconyFloor && windowUV.y < 0.25 && windowUV.x > 0.15 && windowUV.x < 0.85 && !isNightMode;
 
-      // Cheering person on balcony (bigger and more visible)
+      // Cheering person on balcony with jumping animation (now in both day and night!)
       float personId = floor(vUv.x * 4.0) + floor(vUv.y * 12.0) * 4.0;
       bool hasPerson = random(vec2(personId, 1.0)) > 0.6 && isBalconyFloor;
-      // Person positioned ON the balcony (bigger size)
-      bool isPerson = hasPerson && windowUV.y > 0.05 && windowUV.y < 0.25 && windowUV.x > 0.35 && windowUV.x < 0.65 && !isNightMode;
+
+      // Each person has different jump timing based on their ID
+      float jumpSpeed = 3.5 + random(vec2(personId, 2.0)) * 2.0; // Random jump speed (much faster!)
+      float jumpPhase = random(vec2(personId, 3.0)) * 6.28; // Random start phase
+      float jumpHeight = abs(sin(time * jumpSpeed + jumpPhase)) * 0.15; // Jump up and down (much higher jumps!)
+
+      // Arm waving animation (side to side) - faster and wider
+      float waveSpeed = jumpSpeed * 3.0; // Arms wave much faster than jumping
+      float waveAmount = sin(time * waveSpeed + jumpPhase) * 0.10; // Bigger wave amplitude
+
+      // Animated person bounds - moves up and down (BIGGER SIZE)
+      float personBottom = 0.03 + jumpHeight;
+      float personTop = 0.30 + jumpHeight; // Taller person
+
+      // Person body (center) - WIDER (now visible in both day and night!)
+      bool isPersonBody = hasPerson && windowUV.y > personBottom && windowUV.y < personTop && windowUV.x > 0.35 && windowUV.x < 0.65;
+
+      // Person arms (waving) - THICKER and MORE MOVEMENT (now visible in both day and night!)
+      float armY = personBottom + (personTop - personBottom) * 0.5; // Middle height
+      bool isLeftArm = hasPerson && windowUV.y > armY - 0.05 && windowUV.y < armY + 0.05 && windowUV.x > (0.28 + waveAmount) && windowUV.x < (0.35 + waveAmount);
+      bool isRightArm = hasPerson && windowUV.y > armY - 0.05 && windowUV.y < armY + 0.05 && windowUV.x > (0.65 - waveAmount) && windowUV.x < (0.72 - waveAmount);
+
+      // Combined person (body + arms)
+      bool isPerson = isPersonBody || isLeftArm || isRightArm;
 
       // Random light on/off for each window
       float windowId = floor(vUv.x * 4.0) + floor(vUv.y * 12.0) * 4.0;
@@ -281,8 +304,20 @@ export function createBuildingMaterialWithWindows(
       // Balcony color (darker, like concrete - more prominent)
       vec3 balconyColor = vec3(0.35, 0.35, 0.4);
 
-      // Person color (bright, colorful clothing - highly visible)
-      vec3 personColor = vec3(1.0, 0.2, 0.1); // Bright red/orange shirt
+      // Person color - randomized bright clothing (highly visible)
+      float colorChoice = random(vec2(personId, 4.0));
+      vec3 personColor;
+      if (colorChoice < 0.2) {
+        personColor = vec3(1.0, 0.2, 0.1); // Red shirt
+      } else if (colorChoice < 0.4) {
+        personColor = vec3(0.1, 0.8, 1.0); // Blue shirt
+      } else if (colorChoice < 0.6) {
+        personColor = vec3(1.0, 1.0, 0.2); // Yellow shirt
+      } else if (colorChoice < 0.8) {
+        personColor = vec3(1.0, 0.4, 0.8); // Pink shirt
+      } else {
+        personColor = vec3(0.3, 1.0, 0.3); // Green shirt
+      }
 
       // Window colors
       vec3 windowColor;
@@ -360,13 +395,19 @@ export function createBuildingMaterialWithWindows(
     buildingColor: { value: new T.Color(0.811, 0.745, 0.64) },
     shininess: { value: 8.0 },
     isNightMode: { value: isNightMode },
+    time: { value: 0.0 },
   };
 
-  return new T.ShaderMaterial({
+  const material = new T.ShaderMaterial({
     vertexShader: vertexShader,
     fragmentShader: fragmentShader,
     uniforms: uniforms,
   });
+
+  // Store reference to uniforms so they can be updated
+  material.userData.timeUniform = uniforms.time;
+
+  return material;
 }
 
 export function createCreamStoneMaterial(fogParams = {}) {
