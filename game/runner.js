@@ -7,6 +7,7 @@ import { GrObject } from "../libs/CS559-Framework/GrObject.js";
 import { Random } from "./random.js";
 import { GrSkyscraper, sampleSkyscraper } from "./building.js";
 import { load3DModel } from "./loader.js";
+import { createArtDecoMaterial, createBronzeMaterial } from "./materials.js";
 
 // Player character for the runner game
 export class Player extends GrObject {
@@ -198,50 +199,23 @@ export class Obstacle extends GrObject {
 
     if (type === "box") {
       // Overhead obstacle - must slide under - TALLER and more obvious
-      geometry = new T.BoxGeometry(1.0, 0.6, 1.0);
-      material = new T.MeshStandardMaterial({
-        color: 0xff4444,
-        roughness: 0.5,
-        metalness: 0.3,
-      });
+      geometry = new T.BoxGeometry(1.0, 1.4, 0.7);
+      material = createBronzeMaterial();
       mesh = new T.Mesh(geometry, material);
       mesh.position.y = 1.2; // Much higher up - must slide to avoid
 
       // Add warning stripes
-      const stripeGeom = new T.BoxGeometry(0.25, 0.62, 1.52);
-      const stripeMat = new T.MeshStandardMaterial({
-        color: 0xffff00,
-        emissive: 0x444400,
-      });
+      const stripeGeom = new T.BoxGeometry(0.25, 1.5, 1);
+      const stripeMat = createArtDecoMaterial();
       const stripe1 = new T.Mesh(stripeGeom, stripeMat);
       stripe1.position.set(-0.5, 1.2, 0);
       const stripe2 = new T.Mesh(stripeGeom, stripeMat);
       stripe2.position.set(0.5, 1.2, 0);
       group.add(stripe1);
       group.add(stripe2);
-
-      // Add downward arrow using cones and cylinder
-      const arrowMat = new T.MeshStandardMaterial({
-        color: 0xffffff,
-        emissive: 0xffffff,
-        emissiveIntensity: 0.5,
-      });
-
-      // Arrow shaft (cylinder)
-      const shaftGeom = new T.CylinderGeometry(0.08, 0.08, 0.4, 8);
-      const shaft = new T.Mesh(shaftGeom, arrowMat);
-      shaft.position.set(0, 1.2, 0);
-      group.add(shaft);
-
-      // Arrow head (cone pointing down)
-      const headGeom = new T.ConeGeometry(0.2, 0.3, 8);
-      const head = new T.Mesh(headGeom, arrowMat);
-      head.position.set(0, 0.9, 0);
-      head.rotation.x = Math.PI; // Point downward
-      group.add(head);
     } else if (type === "barrier") {
       geometry = new T.BoxGeometry(1, 0.5, 0.8);
-      material = new T.MeshStandardMaterial({ color: 0xffaa00 });
+      material = createBronzeMaterial();
       mesh = new T.Mesh(geometry, material);
       mesh.position.y = 0.25;
     } else if (type === "car") {
@@ -319,6 +293,7 @@ export class Obstacle extends GrObject {
 
       // Rotate car to face toward player (coming at them)
       mesh.rotation.y = Math.PI;
+      mesh.scale.set(0.8, 1, 1);
     }
 
     group.add(mesh);
@@ -619,7 +594,9 @@ export class RunnerGame extends GrObject {
     road.position.set(0, this.roadHeight, zPosition);
 
     this.objects[0].add(road);
-    this.roadSegments.push({ mesh: road, z: zPosition });
+
+    // Track markers for this segment
+    const markers = [];
 
     // Add lane markers with dashed pattern
     for (let lane = -0.5; lane <= 0.5; lane += 1) {
@@ -627,7 +604,7 @@ export class RunnerGame extends GrObject {
       for (let dash = 0; dash < this.segmentLength; dash += 2) {
         const markerGeometry = new T.BoxGeometry(0.1, 0.02, 0.8);
         const markerMaterial = new T.MeshStandardMaterial({
-          color: 0xffff00,
+          color: 0xffffff,
           emissive: 0x444400,
         });
         const marker = new T.Mesh(markerGeometry, markerMaterial);
@@ -637,8 +614,11 @@ export class RunnerGame extends GrObject {
           zPosition - this.segmentLength / 2 + dash,
         );
         this.objects[0].add(marker);
+        markers.push(marker);
       }
     }
+
+    this.roadSegments.push({ mesh: road, markers: markers, z: zPosition });
   }
 
   generateCityBlocks(zPosition) {
@@ -720,10 +700,12 @@ export class RunnerGame extends GrObject {
         type = "barrier"; // Ground - must jump
       }
 
+      let z = zPosition + (this.random.nextFloat() * 2 - 1) * 16;
+
       const obstacle = new Obstacle(
         lane,
         type,
-        new T.Vector3(laneX, this.roadHeight, zPosition),
+        new T.Vector3(laneX, this.roadHeight, z),
         this.carSpeed,
       );
       this.objects[0].add(obstacle.objects[0]);
@@ -919,6 +901,10 @@ export class RunnerGame extends GrObject {
     for (let segment of this.roadSegments) {
       segment.mesh.position.z -= this.speed;
       segment.z -= this.speed;
+      // Move markers too
+      for (let marker of segment.markers) {
+        marker.position.z -= this.speed;
+      }
     }
 
     for (let block of this.cityBlocks) {
@@ -937,15 +923,19 @@ export class RunnerGame extends GrObject {
 
     // Remove segments that are too far behind
     this.roadSegments = this.roadSegments.filter((segment) => {
-      if (segment.z < -this.segmentsBehind * this.segmentLength) {
+      if (segment.z < -50) {
         this.objects[0].remove(segment.mesh);
+        // Remove markers too
+        for (let marker of segment.markers) {
+          this.objects[0].remove(marker);
+        }
         return false;
       }
       return true;
     });
 
     this.cityBlocks = this.cityBlocks.filter((block) => {
-      if (block.z < -this.segmentsBehind * this.segmentLength) {
+      if (block.z < -50) {
         this.objects[0].remove(block.mesh);
         return false;
       }
