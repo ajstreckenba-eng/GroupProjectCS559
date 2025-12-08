@@ -15,6 +15,7 @@ let currentScore = 0;
 let highScore = parseInt(localStorage.getItem("cityRunnerHighScore")) || 0;
 let animationFrameId = null;
 let isNightMode = false; // Day mode by default
+let characterMode = "character1"; // Default: girl runs, jogger chases
 
 // Screen elements
 const startScreen = document.getElementById("start-screen");
@@ -28,6 +29,8 @@ const resumeButton = document.getElementById("resume-button");
 const restartButton = document.getElementById("restart-button");
 const dayModeButton = document.getElementById("day-mode-button");
 const nightModeButton = document.getElementById("night-mode-button");
+const character1Button = document.getElementById("character1-button");
+const character2Button = document.getElementById("character2-button");
 
 // Score elements
 const scoreValue = document.getElementById("score-value");
@@ -66,6 +69,7 @@ function initGame() {
       far: 10,
     },
     isNightMode: isNightMode,
+    characterMode: characterMode,
   });
 
   world.add(runnerGame);
@@ -262,6 +266,20 @@ nightModeButton.addEventListener("click", () => {
   nightModeButton.classList.add("active");
   dayModeButton.classList.remove("active");
 });
+
+function setCharacterMode(mode) {
+  characterMode = mode;
+  if (mode === "character1") {
+    character1Button.classList.add("active");
+    character2Button.classList.remove("active");
+  } else {
+    character2Button.classList.add("active");
+    character1Button.classList.remove("active");
+  }
+}
+
+character1Button.addEventListener("click", () => setCharacterMode("character1"));
+character2Button.addEventListener("click", () => setCharacterMode("character2"));
 
 // Event listeners
 startButton.addEventListener("click", startGame);

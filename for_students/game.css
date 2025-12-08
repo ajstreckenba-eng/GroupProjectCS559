@@ -81,6 +81,12 @@ body {
   margin-top: 0;
 }
 
+.character-note {
+  font-size: 0.95rem;
+  opacity: 0.85;
+  margin-top: 12px;
+}
+
 .mode-buttons {
   display: flex;
   gap: 15px;

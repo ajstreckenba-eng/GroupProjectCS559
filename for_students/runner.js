@@ -10,7 +10,7 @@ import { load3DModel } from "./loader.js";
 
 // Player character for the runner game
 export class Player extends GrObject {
-  constructor(roadHeight) {
+  constructor(roadHeight, options = {}) {
     const group = new T.Group();
 
     super("Player", group);
@@ -26,6 +26,12 @@ export class Player extends GrObject {
     this.baseY = roadHeight;
     this.slideTimer = 0;
 
+    // --- CONFIG ---
+    const runModelPath = options.runModelPath || "./assets/snazy_jogger_animated.glb";
+    const jumpModelPath = options.jumpModelPath || "./assets/jumping.glb";
+    const runScale = options.runScale ?? 0.8;
+    const runTimeScale = options.runTimeScale ?? 0.8;
+
     // --- ANIMATION VARIABLES ---
     this.mixer = null;       // Controls animations for the loaded model
     this.runAction = null;   // Running animation
@@ -35,15 +41,15 @@ export class Player extends GrObject {
     // --- LOAD BOTH MODELS ---
     // We use Promise.all to wait for BOTH files to finish downloading
     Promise.all([
-      load3DModel("./assets/snazy_jogger_animated.glb"), // New runner model
-      load3DModel("./assets/jumping.glb")                // Jump animation source
+      load3DModel(runModelPath), // Runner model (configurable)
+      load3DModel(jumpModelPath) // Jump animation source
     ]).then(([runData, jumpData]) => {
 
       // 1. SETUP THE VISIBLE MODEL (Use the Running file)
       // Clone with skeleton preservation so animations work
       const model = cloneSkeleton(runData.scene);
       // Enlarge character a bit for better visibility
-      model.scale.set(0.8, 0.8, 0.8);
+      model.scale.set(runScale, runScale, runScale);
       model.rotation.y = 0; // Face down-track (+Z)
 
       group.add(model);
@@ -65,7 +71,7 @@ export class Player extends GrObject {
         this.jumpAction = this.mixer.clipAction(jumpClip);
 
         // Slow the running animation slightly
-        this.runAction.timeScale = 0.8;
+        this.runAction.timeScale = runTimeScale;
 
         // Configure Jump to only play once (don't loop in mid-air)
         this.jumpAction.loop = T.LoopOnce;
@@ -170,7 +176,7 @@ export class Player extends GrObject {
 
 // Obstacle class (Cars moving toward player)
 export class Obstacle extends GrObject {
-  constructor(lane, type = "car", position = { x: 0, y: 0, z: 0 }) {
+  constructor(lane, type = "car", position = { x: 0, y: 0, z: 0 }, carSpeed = 1.0) {
     const group = new T.Group();
 
     let geometry, material, mesh;
@@ -310,7 +316,7 @@ export class Obstacle extends GrObject {
     this.canJumpOver = type === "barrier";
     this.canSlideUnder = type === "box"; // Box is overhead - must slide under
     // Cars drive toward player at same speed player moves forward
-    this.speed = type === "car" ? 1.0 : 0; // Cars get extra speed multiplier
+    this.speed = type === "car" ? carSpeed : 0; // Cars get extra speed multiplier
   }
 
   update(baseSpeed) {
@@ -367,146 +373,50 @@ export class Coin extends GrObject {
 
 // Chase Character (like the security guard in Subway Surfers)
 export class ChaseCharacter extends GrObject {
-  constructor() {
+  constructor(options = {}) {
     const group = new T.Group();
-    const scale = 0.6; // Slightly bigger than player
-
-    // Security guard appearance
-    // Body with dark blue uniform
-    const bodyGeometry = new T.BoxGeometry(
-      0.7 * scale,
-      1.6 * scale,
-      0.5 * scale,
-    );
-    const bodyMaterial = new T.MeshStandardMaterial({
-      color: 0x1a1a4d,
-      roughness: 0.8,
-      metalness: 0.1,
-    });
-    const body = new T.Mesh(bodyGeometry, bodyMaterial);
-    body.position.y = 0.8 * scale;
-    group.add(body);
-
-    // Head
-    const headGeometry = new T.SphereGeometry(0.35 * scale);
-    const headMaterial = new T.MeshStandardMaterial({
-      color: 0xffcc99,
-      roughness: 0.7,
-    });
-    const head = new T.Mesh(headGeometry, headMaterial);
-    head.position.y = 2.0 * scale;
-    group.add(head);
-
-    // Police cap
-    const capGeometry = new T.CylinderGeometry(
-      0.38 * scale,
-      0.35 * scale,
-      0.2 * scale,
-      16,
-    );
-    const capMaterial = new T.MeshStandardMaterial({
-      color: 0x0a0a2a,
-      roughness: 0.9,
-    });
-    const cap = new T.Mesh(capGeometry, capMaterial);
-    cap.position.y = 2.3 * scale;
-    group.add(cap);
-
-    // Badge (yellow star on chest)
-    const badgeGeometry = new T.BoxGeometry(
-      0.15 * scale,
-      0.15 * scale,
-      0.05 * scale,
-    );
-    const badgeMaterial = new T.MeshStandardMaterial({
-      color: 0xffdd00,
-      emissive: 0xffaa00,
-      emissiveIntensity: 0.5,
-      metalness: 0.8,
-    });
-    const badge = new T.Mesh(badgeGeometry, badgeMaterial);
-    badge.position.set(0, 1.2 * scale, 0.3 * scale);
-    group.add(badge);
-
-    // Arms
-    const armGeometry = new T.BoxGeometry(
-      0.22 * scale,
-      0.9 * scale,
-      0.22 * scale,
-    );
-    const armMaterial = new T.MeshStandardMaterial({
-      color: 0x1a1a4d,
-      roughness: 0.8,
-    });
-
-    const leftArm = new T.Mesh(armGeometry, armMaterial);
-    leftArm.position.set(-0.5 * scale, 0.7 * scale, 0);
-    group.add(leftArm);
-
-    const rightArm = new T.Mesh(armGeometry, armMaterial);
-    rightArm.position.set(0.5 * scale, 0.7 * scale, 0);
-    group.add(rightArm);
-
-    // Legs
-    const legGeometry = new T.BoxGeometry(
-      0.28 * scale,
-      0.8 * scale,
-      0.28 * scale,
-    );
-    const legMaterial = new T.MeshStandardMaterial({
-      color: 0x0a0a2a,
-      roughness: 0.9,
-    });
-
-    const leftLeg = new T.Mesh(legGeometry, legMaterial);
-    leftLeg.position.set(-0.18 * scale, -0.4 * scale, 0);
-    group.add(leftLeg);
-
-    const rightLeg = new T.Mesh(legGeometry, legMaterial);
-    rightLeg.position.set(0.18 * scale, -0.4 * scale, 0);
-    group.add(rightLeg);
-
-    // Black boots
-    const bootGeometry = new T.BoxGeometry(
-      0.32 * scale,
-      0.18 * scale,
-      0.45 * scale,
-    );
-    const bootMaterial = new T.MeshStandardMaterial({
-      color: 0x000000,
-      roughness: 0.4,
-    });
-
-    const leftBoot = new T.Mesh(bootGeometry, bootMaterial);
-    leftBoot.position.set(-0.18 * scale, -0.85 * scale, 0.05 * scale);
-    group.add(leftBoot);
-
-    const rightBoot = new T.Mesh(bootGeometry, bootMaterial);
-    rightBoot.position.set(0.18 * scale, -0.85 * scale, 0.05 * scale);
-    group.add(rightBoot);
 
     super("ChaseCharacter", group);
 
-    this.animationTime = 0;
-    this.leftArm = leftArm;
-    this.rightArm = rightArm;
-    this.leftLeg = leftLeg;
-    this.rightLeg = rightLeg;
+    this.mixer = null;
+    this.runAction = null;
+    this.model = null;
     this.targetDistance = -8; // Stay 8 units behind player
+
+    const modelPath = options.modelPath || "./assets/girl_animated.glb";
+    const modelScale = options.modelScale ?? 0.65;
+    const runTimeScale = options.runTimeScale ?? 1.05;
+
+    // Load animated chase character model
+    load3DModel(modelPath).then((data) => {
+      const model = cloneSkeleton(data.scene);
+      model.scale.set(modelScale, modelScale, modelScale);
+      model.rotation.y = 0; // Face down the track
+      group.add(model);
+      this.model = model;
+
+      // Drive the chase animation
+      this.mixer = new T.AnimationMixer(model);
+      const runClip = data.animations?.[0];
+      if (runClip) {
+        this.runAction = this.mixer.clipAction(runClip);
+        this.runAction.timeScale = runTimeScale; // Slightly faster to keep up
+        this.runAction.play();
+      }
+    }).catch((err) => {
+      console.error("Error loading chase character model:", err);
+    });
   }
 
   update(delta, playerZ) {
-    // Running animation
-    this.animationTime += 0.25; // Slightly faster than player (catching up)
-
-    const swingAmount = 0.7;
-    const armSwing = Math.sin(this.animationTime) * swingAmount;
-    const legSwing = Math.sin(this.animationTime) * swingAmount;
-
-    this.leftArm.rotation.x = armSwing;
-    this.rightArm.rotation.x = -armSwing;
-    this.leftLeg.rotation.x = legSwing;
-    this.rightLeg.rotation.x = -legSwing;
+    // Tick animation mixer if model has loaded
+    if (this.mixer) {
+      this.mixer.update(delta * 0.001);
+      if (this.model) {
+        // Keep model rooted at group's origin in case the clip has root motion
+        this.model.position.set(0, 0, 0);
+      }
+    }
 
     // Follow player but stay behind
     const targetZ = playerZ + this.targetDistance;
@@ -527,23 +437,63 @@ export class RunnerGame extends GrObject {
     this.fogParams = params.fogParams;
     this.isNightMode = params.isNightMode || false;
     this.roadHeight = params.roadHeight || 8;
+    this.characterMode = params.characterMode || "character1";
+
+    const characterConfigs = {
+      character1: {
+        playerModel: "./assets/girl_animated.glb",
+        playerScale: 0.8,
+        playerRunTimeScale: 0.8,
+        chaseModel: "./assets/snazy_jogger_animated.glb",
+        chaseScale: 0.7,
+        chaseRunTimeScale: 1.05,
+        speed: {
+          start: 0.10,
+          max: 0.20,
+          increaseRate: 0.00004,
+        },
+        carSpeed: 0.5, // Slower incoming cars for easier mode
+      },
+      character2: {
+        playerModel: "./assets/snazy_jogger_animated.glb",
+        playerScale: 0.8,
+        playerRunTimeScale: 0.8,
+        chaseModel: "./assets/girl_animated.glb",
+        chaseScale: 0.65,
+        chaseRunTimeScale: 1.05,
+        speed: {
+          start: 0.25,
+          max: 0.50,
+          increaseRate: 0.00005,
+        },
+        carSpeed: 1.0,
+      },
+    };
+
+    const characterConfig =
+      characterConfigs[this.characterMode] || characterConfigs.character1;
 
     // Game state
-    this.player = new Player(this.roadHeight);
+    this.player = new Player(this.roadHeight, {
+      runModelPath: characterConfig.playerModel,
+      runScale: characterConfig.playerScale,
+      runTimeScale: characterConfig.playerRunTimeScale,
+    });
     this.obstacles = [];
     this.coins = [];
     this.roadSegments = [];
     this.cityBlocks = [];
     this.coinsCollected = 0;
 
-    this.speed = 0.25; // Forward movement speed - starts faster
-    this.baseSpeed = 0.25; // Starting speed
-    this.maxSpeed = 0.50; // Maximum speed cap
-    this.speedIncreaseRate = 0.00005; // How quickly speed increases
+    this.speed = characterConfig.speed.start; // Forward movement speed
+    this.baseSpeed = characterConfig.speed.start; // Starting speed
+    this.maxSpeed = characterConfig.speed.max; // Maximum speed cap
+    this.speedIncreaseRate = characterConfig.speed.increaseRate; // How quickly speed increases
     this.distance = 0;
     this.segmentLength = 10;
     this.segmentsAhead = 20;
     this.segmentsBehind = 5;
+    this.carSpeed = characterConfig.carSpeed;
 
     // Path curvature parameters
     this.pathAngle = 0; // Current direction angle
@@ -559,7 +509,11 @@ export class RunnerGame extends GrObject {
     this.player.objects[0].position.set(0, this.roadHeight, 0);
 
     // Add chase character
-    this.chaseCharacter = new ChaseCharacter();
+    this.chaseCharacter = new ChaseCharacter({
+      modelPath: characterConfig.chaseModel,
+      modelScale: characterConfig.chaseScale,
+      runTimeScale: characterConfig.chaseRunTimeScale,
+    });
     group.add(this.chaseCharacter.objects[0]);
     this.chaseCharacter.objects[0].position.set(0, this.roadHeight, -8);
 
@@ -753,6 +707,7 @@ export class RunnerGame extends GrObject {
         lane,
         type,
         new T.Vector3(laneX, this.roadHeight, zPosition),
+        this.carSpeed,
       );
       this.objects[0].add(obstacle.objects[0]);
       this.obstacles.push(obstacle);
