@@ -27,62 +27,64 @@ export class Player extends GrObject {
     this.slideTimer = 0;
 
     // --- CONFIG ---
-    const runModelPath = options.runModelPath || "./assets/snazy_jogger_animated.glb";
-    const jumpModelPath = options.jumpModelPath || "./assets/jumping.glb";
+    const runModelPath =
+      options.runModelPath || "./game/assets/snazy_jogger_animated.glb";
+    const jumpModelPath = options.jumpModelPath || "./game/assets/jumping.glb";
     const runScale = options.runScale ?? 0.8;
     const runTimeScale = options.runTimeScale ?? 0.8;
 
     // --- ANIMATION VARIABLES ---
-    this.mixer = null;       // Controls animations for the loaded model
-    this.runAction = null;   // Running animation
-    this.jumpAction = null;  // Jumping animation
-    this.model = null;       // Reference to the 3D character mesh
+    this.mixer = null; // Controls animations for the loaded model
+    this.runAction = null; // Running animation
+    this.jumpAction = null; // Jumping animation
+    this.model = null; // Reference to the 3D character mesh
 
     // --- LOAD BOTH MODELS ---
     // We use Promise.all to wait for BOTH files to finish downloading
     Promise.all([
       load3DModel(runModelPath), // Runner model (configurable)
-      load3DModel(jumpModelPath) // Jump animation source
-    ]).then(([runData, jumpData]) => {
+      load3DModel(jumpModelPath), // Jump animation source
+    ])
+      .then(([runData, jumpData]) => {
+        // 1. SETUP THE VISIBLE MODEL (Use the Running file)
+        // Clone with skeleton preservation so animations work
+        const model = cloneSkeleton(runData.scene);
+        // Enlarge character a bit for better visibility
+        model.scale.set(runScale, runScale, runScale);
+        model.rotation.y = 0; // Face down-track (+Z)
 
-      // 1. SETUP THE VISIBLE MODEL (Use the Running file)
-      // Clone with skeleton preservation so animations work
-      const model = cloneSkeleton(runData.scene);
-      // Enlarge character a bit for better visibility
-      model.scale.set(runScale, runScale, runScale);
-      model.rotation.y = 0; // Face down-track (+Z)
+        group.add(model);
+        this.model = model;
 
-      group.add(model);
-      this.model = model;
+        // 2. SETUP THE ANIMATION MIXER
+        // The mixer controls the *visible model*
+        this.mixer = new T.AnimationMixer(model);
 
-      // 2. SETUP THE ANIMATION MIXER
-      // The mixer controls the *visible model*
-      this.mixer = new T.AnimationMixer(model);
+        // 3. EXTRACT ANIMATIONS
+        // Get the run clip from the first file
+        const runClip = runData.animations[0];
+        // Get the jump clip from the second file
+        const jumpClip = jumpData.animations[0];
 
-      // 3. EXTRACT ANIMATIONS
-      // Get the run clip from the first file
-      const runClip = runData.animations[0];
-      // Get the jump clip from the second file
-      const jumpClip = jumpData.animations[0];
+        if (runClip && jumpClip) {
+          // Create playable actions
+          this.runAction = this.mixer.clipAction(runClip);
+          this.jumpAction = this.mixer.clipAction(jumpClip);
 
-      if (runClip && jumpClip) {
-        // Create playable actions
-        this.runAction = this.mixer.clipAction(runClip);
-        this.jumpAction = this.mixer.clipAction(jumpClip);
+          // Slow the running animation slightly
+          this.runAction.timeScale = runTimeScale;
 
-        // Slow the running animation slightly
-        this.runAction.timeScale = runTimeScale;
+          // Configure Jump to only play once (don't loop in mid-air)
+          this.jumpAction.loop = T.LoopOnce;
+          this.jumpAction.clampWhenFinished = true; // Freeze at end of jump
 
-        // Configure Jump to only play once (don't loop in mid-air)
-        this.jumpAction.loop = T.LoopOnce;
-        this.jumpAction.clampWhenFinished = true; // Freeze at end of jump
-
-        // Start Running immediately
-        this.runAction.play();
-      }
-    }).catch(err => {
-      console.error("Error loading character files:", err);
-    });
+          // Start Running immediately
+          this.runAction.play();
+        }
+      })
+      .catch((err) => {
+        console.error("Error loading character files:", err);
+      });
   }
 
   // --- MOVEMENT LOGIC ---
@@ -91,13 +93,13 @@ export class Player extends GrObject {
     // Only jump if we are currently on the ground
     if (!this.isJumping && !this.isSliding) {
       this.isJumping = true;
-      this.jumpVelocity = 0.30; // Physics upward force (increased from 0.20 for faster jump)
+      this.jumpVelocity = 0.3; // Physics upward force (increased from 0.20 for faster jump)
 
       // ANIMATION: Switch from Run to Jump
       if (this.runAction && this.jumpAction) {
-        this.runAction.stop();   // Stop running
+        this.runAction.stop(); // Stop running
         this.jumpAction.reset(); // Rewind jump to start
-        this.jumpAction.play();  // Play jump
+        this.jumpAction.play(); // Play jump
       }
     }
   }
@@ -167,16 +169,29 @@ export class Player extends GrObject {
 
   // Keep your other methods (moveLeft, moveRight, etc.)
   moveLeft() {
-    if (this.lane < 2) { this.lane++; this.targetLane = this.lane; this.laneChangeProgress = 1; }
+    if (this.lane < 2) {
+      this.lane++;
+      this.targetLane = this.lane;
+      this.laneChangeProgress = 1;
+    }
   }
   moveRight() {
-    if (this.lane > 0) { this.lane--; this.targetLane = this.lane; this.laneChangeProgress = 1; }
+    if (this.lane > 0) {
+      this.lane--;
+      this.targetLane = this.lane;
+      this.laneChangeProgress = 1;
+    }
   }
 }
 
 // Obstacle class (Cars moving toward player)
 export class Obstacle extends GrObject {
-  constructor(lane, type = "car", position = { x: 0, y: 0, z: 0 }, carSpeed = 1.0) {
+  constructor(
+    lane,
+    type = "car",
+    position = { x: 0, y: 0, z: 0 },
+    carSpeed = 1.0,
+  ) {
     const group = new T.Group();
 
     let geometry, material, mesh;
@@ -388,24 +403,26 @@ export class ChaseCharacter extends GrObject {
     const runTimeScale = options.runTimeScale ?? 1.05;
 
     // Load animated chase character model
-    load3DModel(modelPath).then((data) => {
-      const model = cloneSkeleton(data.scene);
-      model.scale.set(modelScale, modelScale, modelScale);
-      model.rotation.y = 0; // Face down the track
-      group.add(model);
-      this.model = model;
+    load3DModel(modelPath)
+      .then((data) => {
+        const model = cloneSkeleton(data.scene);
+        model.scale.set(modelScale, modelScale, modelScale);
+        model.rotation.y = 0; // Face down the track
+        group.add(model);
+        this.model = model;
 
-      // Drive the chase animation
-      this.mixer = new T.AnimationMixer(model);
-      const runClip = data.animations?.[0];
-      if (runClip) {
-        this.runAction = this.mixer.clipAction(runClip);
-        this.runAction.timeScale = runTimeScale; // Slightly faster to keep up
-        this.runAction.play();
-      }
-    }).catch((err) => {
-      console.error("Error loading chase character model:", err);
-    });
+        // Drive the chase animation
+        this.mixer = new T.AnimationMixer(model);
+        const runClip = data.animations?.[0];
+        if (runClip) {
+          this.runAction = this.mixer.clipAction(runClip);
+          this.runAction.timeScale = runTimeScale; // Slightly faster to keep up
+          this.runAction.play();
+        }
+      })
+      .catch((err) => {
+        console.error("Error loading chase character model:", err);
+      });
   }
 
   update(delta, playerZ) {
@@ -441,29 +458,29 @@ export class RunnerGame extends GrObject {
 
     const characterConfigs = {
       character1: {
-        playerModel: "./assets/girl_animated.glb",
+        playerModel: "./game/assets/girl_animated.glb",
         playerScale: 0.8,
         playerRunTimeScale: 0.8,
-        chaseModel: "./assets/snazy_jogger_animated.glb",
+        chaseModel: "./game/assets/snazy_jogger_animated.glb",
         chaseScale: 0.7,
         chaseRunTimeScale: 1.05,
         speed: {
-          start: 0.10,
-          max: 0.20,
+          start: 0.1,
+          max: 0.2,
           increaseRate: 0.00004,
         },
         carSpeed: 0.5, // Slower incoming cars for easier mode
       },
       character2: {
-        playerModel: "./assets/snazy_jogger_animated.glb",
+        playerModel: "./game/assets/snazy_jogger_animated.glb",
         playerScale: 0.8,
         playerRunTimeScale: 0.8,
-        chaseModel: "./assets/girl_animated.glb",
+        chaseModel: "./game/assets/girl_animated.glb",
         chaseScale: 0.65,
         chaseRunTimeScale: 1.05,
         speed: {
           start: 0.25,
-          max: 0.50,
+          max: 0.5,
           increaseRate: 0.00005,
         },
         carSpeed: 1.0,
@@ -825,7 +842,11 @@ export class RunnerGame extends GrObject {
     for (let block of this.cityBlocks) {
       if (block.mesh) {
         block.mesh.traverse((child) => {
-          if (child.material && child.material.userData && child.material.userData.timeUniform) {
+          if (
+            child.material &&
+            child.material.userData &&
+            child.material.userData.timeUniform
+          ) {
             child.material.userData.timeUniform.value = this.animationTime;
           }
         });

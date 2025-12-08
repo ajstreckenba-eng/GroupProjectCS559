@@ -278,8 +278,12 @@ function setCharacterMode(mode) {
   }
 }
 
-character1Button.addEventListener("click", () => setCharacterMode("character1"));
-character2Button.addEventListener("click", () => setCharacterMode("character2"));
+character1Button.addEventListener("click", () =>
+  setCharacterMode("character1"),
+);
+character2Button.addEventListener("click", () =>
+  setCharacterMode("character2"),
+);
 
 // Event listeners
 startButton.addEventListener("click", startGame);
