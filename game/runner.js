@@ -29,7 +29,7 @@ export class Player extends GrObject {
     this.slideHeld = false; // whether the slide key is currently held
     this.slideEaseDown = 0.18; // time to crouch down
     this.slideEaseUp = 0.25; // time to stand back up
-    this.slideYOffset = -0.3; // lift body slightly so whole model stays visible while sliding
+    this.slideYOffset = 0; // no crouch depth; we will tilt horizontally instead
     this.slideTilt = Math.PI / 2; // rotate to lie on the back while sliding (show back to camera)
 
     // --- CONFIG ---
@@ -243,10 +243,20 @@ export class Obstacle extends GrObject {
     type = "car",
     position = { x: 0, y: 0, z: 0 },
     carSpeed = 1.0,
+    options = {},
   ) {
     const group = new T.Group();
 
     let geometry, material, mesh;
+    let nonBlocking = false; // decorative obstacles that shouldn't collide
+    let personMesh = null; // used for pedestrian obstacle bounding only
+    let crossDir = 1;
+    let crossX = 0;
+    let crossStep = 0.08; // lateral step per update for pedestrian/crosswalk walkers
+    let crossPause = 0; // pause timer at edges
+    let walkerMesh = null;
+    let startCrosswalkLoader = null; // deferred loader so we can set mixer after super
+    const forceWalker = options.forceWalker || false;
 
     if (type === "box") {
       // Overhead obstacle - must slide under - TALLER and more obvious
@@ -269,6 +279,68 @@ export class Obstacle extends GrObject {
       material = createBronzeMaterial();
       mesh = new T.Mesh(geometry, material);
       mesh.position.y = 0.25;
+    } else if (type === "crosswalk") {
+      // Decorative crosswalk stripes
+      const crossGroup = new T.Group();
+      const stripeMat = new T.MeshStandardMaterial({
+        color: 0xffffff,
+        emissive: 0x222222,
+        roughness: 0.6,
+        metalness: 0.1,
+      });
+      // Cover all three lanes with evenly spaced stripes
+      for (let i = -3; i <= 3; i++) {
+        const stripe = new T.Mesh(new T.BoxGeometry(0.28, 0.02, 3.2), stripeMat);
+        stripe.position.set(i * 0.45, 0, 0); // wider spacing so stripes are more separated
+        crossGroup.add(stripe);
+      }
+      mesh = crossGroup;
+      mesh.position.y = 0;
+      nonBlocking = true; // stripes are decorative; walker handles collision
+
+      // Occasionally add an animated pedestrian on the crosswalk (randomly)
+      if (forceWalker || Math.random() < 0.35) {
+        const useYellowWalker = Math.random() < 0.5; // mix in yellow walker sometimes
+        crossX = -1.6; // start from one edge of the crosswalk
+        crossDir = 1;
+        crossStep = useYellowWalker ? 0.02 : 0.05; // both walkers slowed down
+        crossPause = 0;
+        // Defer loader until after super so we can safely set properties on `this`
+        startCrosswalkLoader = () => {
+          const walkerPath = useYellowWalker
+            ? "./game/assets/girl_in_yellow_animated.glb"
+            : "./game/assets/crosswalk_animated.glb";
+          load3DModel(walkerPath)
+            .then((data) => {
+              if (!data || !data.scene) return;
+              const walker = cloneSkeleton(data.scene);
+              walker.scale.set(0.7, 0.7, 0.7);
+              walker.position.set(crossX, 0, 0);
+              // Rotate so the walker faces across the street (player sees side profile)
+              walker.rotation.y = Math.PI / 2;
+              crossGroup.add(walker);
+              // Persist walker on the instance so update() can move it
+              walkerMesh = walker;
+              this.walkerMesh = walker;
+              this.crossX = crossX;
+              this.crossDir = crossDir;
+              this.crossStep = crossStep;
+              this.crossPause = crossPause;
+              this.nonBlocking = false; // walker present, make obstacle collidable
+
+              // Optional: play first animation clip if present
+              if (data.animations && data.animations.length > 0) {
+                const mixer = new T.AnimationMixer(walker);
+                const action = mixer.clipAction(data.animations[0]);
+                action.play();
+                this.crosswalkMixer = mixer;
+              }
+            })
+            .catch((err) => {
+              console.error("Failed to load crosswalk character:", err);
+            });
+        };
+      }
     } else if (type === "car") {
       // Create realistic car with metallic paint texture
       const createCarTexture = (baseColor) => {
@@ -292,8 +364,8 @@ export class Obstacle extends GrObject {
         return new T.CanvasTexture(canvas);
       };
 
-      // Car shape - made BIGGER for better visibility
-      const bodyGeom = new T.BoxGeometry(1.2, 0.8, 2.5);
+      const carLength = 2.2 + Math.random() * 0.8; // 2.2–3.0
+      const bodyGeom = new T.BoxGeometry(1.2, 0.8, carLength);
       const carColors = ["#cc0000", "#00cc00", "#0000cc", "#cccc00", "#cc00cc"];
       const carTexture = createCarTexture(
         carColors[Math.floor(Math.random() * carColors.length)],
@@ -307,8 +379,8 @@ export class Obstacle extends GrObject {
       mesh = new T.Mesh(bodyGeom, bodyMat);
       mesh.position.y = 0.4;
 
-      // Car roof with window texture
-      const roofGeom = new T.BoxGeometry(1.0, 0.5, 1.5);
+      // Roof with window texture (length tracks body length)
+      const roofGeom = new T.BoxGeometry(1.0, 0.5, Math.max(1.2, carLength - 1.0));
       const windowCanvas = document.createElement("canvas");
       windowCanvas.width = 64;
       windowCanvas.height = 64;
@@ -344,7 +416,42 @@ export class Obstacle extends GrObject {
 
       // Rotate car to face toward player (coming at them)
       mesh.rotation.y = Math.PI;
-      mesh.scale.set(0.8, 1, 1);
+      mesh.scale.set(0.8, 1, 1); // uniform lane fit for car
+    } else if (type === "pedestrian") {
+      // Crosswalk with a pedestrian crossing the lanes
+      const crossGroup = new T.Group();
+      const stripeMat = new T.MeshStandardMaterial({
+        color: 0xffffff,
+        emissive: 0x333333,
+        roughness: 0.7,
+        metalness: 0.1,
+      });
+      for (let i = -2; i <= 2; i++) {
+        const stripe = new T.Mesh(new T.BoxGeometry(0.2, 0.02, 3.2), stripeMat);
+        stripe.position.set(i * 0.4, 0, 0);
+        crossGroup.add(stripe);
+      }
+
+      // Simple pedestrian figure
+      const body = new T.Mesh(
+        new T.BoxGeometry(0.35, 1.0, 0.25),
+        new T.MeshStandardMaterial({ color: 0x4444ff }),
+      );
+      body.position.y = 0.5;
+      const head = new T.Mesh(
+        new T.SphereGeometry(0.2, 12, 12),
+        new T.MeshStandardMaterial({ color: 0xffcc99 }),
+      );
+      head.position.y = 1.2;
+      body.add(head);
+
+      crossGroup.add(body);
+      mesh = crossGroup;
+      mesh.position.y = 0;
+      personMesh = body;
+      crossX = -1.5;
+      crossDir = 1;
+      body.position.x = crossX;
     }
 
     group.add(mesh);
@@ -354,20 +461,86 @@ export class Obstacle extends GrObject {
 
     this.lane = lane;
     this.type = type;
+    this.nonBlocking = nonBlocking;
+    this.personMesh = personMesh;
+    this.crossDir = crossDir;
+    this.crossX = crossX;
+    this.crossStep = crossStep;
+    this.crossPause = crossPause;
+    this.walkerMesh = walkerMesh;
+    this.crosswalkMixer = null;
     this.canJumpOver = type === "barrier";
     this.canSlideUnder = type === "box"; // Box is overhead - must slide under
     // Cars drive toward player at same speed player moves forward
-    this.speed = type === "car" ? carSpeed : 0; // Cars get extra speed multiplier
+    this.speed = type === "car" ? carSpeed : 0; // moving obstacles
+
+    // Start deferred loader (e.g., crosswalk walker) now that super is done
+    if (startCrosswalkLoader) {
+      startCrosswalkLoader();
+    }
   }
 
   update(baseSpeed) {
     // Cars move toward player (negative Z plus their own speed)
     this.objects[0].position.z -= baseSpeed + this.speed;
+
+    // Pedestrian crosses laterally across lanes
+    if (this.type === "pedestrian" && this.personMesh) {
+      this.crossX += this.crossStep * this.crossDir;
+      // reverse if beyond road edges
+      if (this.crossX > 1.6) {
+        this.crossX = 1.6;
+        this.crossDir = -1;
+      } else if (this.crossX < -1.6) {
+        this.crossX = -1.6;
+        this.crossDir = 1;
+      }
+      this.personMesh.position.x = this.crossX;
+    }
+
+    // Tick optional animation mixer (e.g., crosswalk walker)
+    if (this.crosswalkMixer) {
+      this.crosswalkMixer.update(0.016); // keep animation at normal speed
+    }
+
+    // Move crosswalk walker across lanes if present
+    if (this.type === "crosswalk" && this.walkerMesh) {
+      // Ensure crosswalk with walker is collidable
+      this.nonBlocking = false;
+      const edge = 1.6;
+      const dt = 0.016;
+      if (this.crossPause > 0) {
+        this.crossPause -= dt;
+      } else {
+        const step = this.crossStep; // constant per update to ensure visible movement
+        this.crossX += step * this.crossDir;
+        if (this.crossX > edge) {
+          this.crossX = edge;
+          this.crossDir = -1;
+          this.crossPause = 1.0; // pause 1s before heading back
+          this.walkerMesh.rotation.y = -Math.PI / 2;
+        } else if (this.crossX < -edge) {
+          this.crossX = -edge;
+          this.crossDir = 1;
+          this.crossPause = 1.0; // pause 1s before heading forward
+          this.walkerMesh.rotation.y = Math.PI / 2;
+        }
+      }
+      this.walkerMesh.position.x = this.crossX;
+    }
   }
 
   getBoundingBox() {
     const box = new T.Box3();
-    box.setFromObject(this.objects[0]);
+    if (this.type === "pedestrian" && this.personMesh) {
+      this.personMesh.updateMatrixWorld(true);
+      box.setFromObject(this.personMesh);
+    } else if (this.type === "crosswalk" && this.walkerMesh) {
+      this.walkerMesh.updateMatrixWorld(true);
+      box.setFromObject(this.walkerMesh);
+    } else {
+      box.setFromObject(this.objects[0]);
+    }
     return box;
   }
 }
@@ -586,6 +759,7 @@ export class RunnerGame extends GrObject {
 
     // Animation time for building materials
     this.animationTime = 0;
+
   }
 
   generateInitialRoad() {
@@ -724,6 +898,21 @@ export class RunnerGame extends GrObject {
   }
 
   spawnObstacle(zPosition) {
+    // Dedicated chance to place a full crosswalk spanning all lanes; when placed, skip other obstacles here
+    const crosswalkRoll = this.random.next() % 100;
+    if (crosswalkRoll < 10) { // 10% chance
+      const crosswalk = new Obstacle(
+        1,
+        "crosswalk",
+        new T.Vector3(0, this.roadHeight, zPosition),
+        this.carSpeed,
+        { forceWalker: false },
+      );
+      this.objects[0].add(crosswalk.objects[0]);
+      this.obstacles.push(crosswalk);
+      return;
+    }
+
     // Randomly choose lanes for obstacles, but always leave at least one lane clear
     const lanes = [0, 1, 2];
     const numObstacles = 1 + (this.random.next() % 2); // 1 or 2 obstacles
@@ -738,14 +927,14 @@ export class RunnerGame extends GrObject {
     for (let i = 0; i < numObstacles && i < 2; i++) {
       // Max 2 obstacles to ensure path
       const lane = lanes[i];
-      const laneX = this.player.lanePositions[lane];
+      let laneX = this.player.lanePositions[lane];
 
-      // Mix of cars (60%), overhead boxes (25%), and barriers (15%)
+      // Mix of cars (65%), overhead boxes (15%), and barriers (20%) after crosswalk handled above
       const rand = this.random.next() % 100;
       let type;
-      if (rand < 60) {
+      if (rand < 65) {
         type = "car";
-      } else if (rand < 85) {
+      } else if (rand < 80) {
         type = "box"; // Overhead - must slide
       } else {
         type = "barrier"; // Ground - must jump
@@ -828,6 +1017,17 @@ export class RunnerGame extends GrObject {
     const playerBox = this.player.getBoundingBox();
 
     for (let obstacle of this.obstacles) {
+      // Crosswalk: collide only with walker, not the stripes
+      if (obstacle.type === "crosswalk" && obstacle.walkerMesh) {
+        const obstacleBox = obstacle.getBoundingBox();
+        if (playerBox.intersectsBox(obstacleBox)) {
+          return true; // Collision with walker
+        }
+        continue; // don't consider stripes
+      }
+
+      if (obstacle.nonBlocking) continue; // skip decorative obstacles
+
       const obstacleBox = obstacle.getBoundingBox();
 
       if (playerBox.intersectsBox(obstacleBox)) {

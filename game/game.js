@@ -27,8 +27,9 @@ const restartButton = document.getElementById('restart-button');
 function initGame() {
   // Create the world
   world = new GrWorld({
-    width: 800,
-    height: 600,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    where: document.getElementById("div1"),
     renderparams: {
       antialias: true,
     },
@@ -50,6 +51,15 @@ function initGame() {
 
   world.add(bigCity);
   world.scene.background = fogColor;
+
+  // Handle resize to keep canvas visible
+  window.addEventListener("resize", () => {
+    if (world && world.renderer && world.camera) {
+      world.camera.aspect = window.innerWidth / window.innerHeight;
+      world.camera.updateProjectionMatrix();
+      world.renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+  });
 }
 
 // Start the game
