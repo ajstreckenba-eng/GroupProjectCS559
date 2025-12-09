@@ -26,6 +26,11 @@ export class Player extends GrObject {
     this.jumpVelocity = 0;
     this.baseY = roadHeight;
     this.slideTimer = 0;
+    this.slideHeld = false; // whether the slide key is currently held
+    this.slideEaseDown = 0.18; // time to crouch down
+    this.slideEaseUp = 0.25; // time to stand back up
+    this.slideYOffset = -0.3; // lift body slightly so whole model stays visible while sliding
+    this.slideTilt = Math.PI / 2; // rotate to lie on the back while sliding (show back to camera)
 
     // --- CONFIG ---
     const runModelPath =
@@ -106,12 +111,20 @@ export class Player extends GrObject {
   }
 
   slide() {
+    // Begin or maintain a slide while the key is held
+    this.slideHeld = true;
     if (!this.isJumping && !this.isSliding) {
       this.isSliding = true;
-      this.slideTimer = 0.6; // seconds
-      this.objects[0].scale.y = 0.5;
-      this.objects[0].position.y = this.baseY - 0.4;
+      this.slideTimer = 0; // measure elapsed slide time
+      // Pause running animation while sliding
+      if (this.runAction) {
+        this.runAction.paused = true;
+      }
     }
+  }
+
+  releaseSlide() {
+    this.slideHeld = false;
   }
 
   update(delta) {
@@ -144,11 +157,49 @@ export class Player extends GrObject {
 
     // 3. HANDLE SLIDING TIMER
     if (this.isSliding) {
-      this.slideTimer -= delta * 0.001;
-      if (this.slideTimer <= 0) {
+      const dt = delta * 0.001;
+      this.slideTimer += dt;
+
+      // Ease into crouch, hold while key is pressed, then ease back up
+      const downEnd = this.slideEaseDown;
+      const upDuration = this.slideEaseUp;
+      let offsetY = 0;
+      let tiltX = 0;
+
+      if (this.slideTimer < downEnd) {
+        // Ease down (sin curve for soft landing)
+        const t = this.slideTimer / downEnd;
+        const ease = Math.sin((t * Math.PI) / 2);
+        offsetY = this.slideYOffset * ease;
+        tiltX = this.slideTilt * ease;
+      } else if (this.slideHeld) {
+        // Hold crouched while key is held; clamp timer so we can ease out cleanly
+        offsetY = this.slideYOffset;
+        tiltX = this.slideTilt;
+        this.slideTimer = downEnd; // prevent timer from running away
+      } else if (this.slideTimer < downEnd + upDuration) {
+        // Ease back up after release
+        const t = (this.slideTimer - downEnd) / upDuration;
+        const ease = 1 - Math.cos((t * Math.PI) / 2);
+        offsetY = this.slideYOffset * (1 - ease);
+        tiltX = this.slideTilt * (1 - ease);
+      } else {
+        // Finish slide
         this.isSliding = false;
-        this.objects[0].scale.y = 1;
+        this.slideHeld = false;
         this.objects[0].position.y = this.baseY;
+        this.objects[0].rotation.x = 0;
+        this.slideTimer = 0;
+        // Resume running animation after slide
+        if (this.runAction) {
+          this.runAction.paused = false;
+          this.runAction.play();
+        }
+      }
+
+      if (this.isSliding) {
+        this.objects[0].position.y = this.baseY - offsetY;
+        this.objects[0].rotation.x = tiltX;
       }
     }
 

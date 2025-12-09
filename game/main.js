@@ -320,8 +320,17 @@ document.addEventListener("keydown", (event) => {
         break;
       case "ArrowDown":
         event.preventDefault();
-        runnerGame.player.slide();
+        runnerGame.player.slide(); // start/maintain slide while held
         break;
+    }
+  }
+});
+
+// Stop sliding on key release
+document.addEventListener("keyup", (event) => {
+  if (gameState === "playing" && runnerGame && runnerGame.player) {
+    if (event.key === "ArrowDown") {
+      runnerGame.player.releaseSlide();
     }
   }
 });
