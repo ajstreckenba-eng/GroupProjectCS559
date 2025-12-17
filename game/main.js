@@ -16,6 +16,7 @@ let highScore = parseInt(localStorage.getItem("cityRunnerHighScore")) || 0;
 let animationFrameId = null;
 let isNightMode = false; // Day mode by default
 let characterMode = "character1"; // Default: girl runs, jogger chases
+let prototypeMode = false;
 
 // Screen elements
 const startScreen = document.getElementById("start-screen");
@@ -31,6 +32,7 @@ const dayModeButton = document.getElementById("day-mode-button");
 const nightModeButton = document.getElementById("night-mode-button");
 const character1Button = document.getElementById("character1-button");
 const character2Button = document.getElementById("character2-button");
+const prototypeButton = document.getElementById("prototype-button");
 
 // Score elements
 const scoreValue = document.getElementById("score-value");
@@ -40,6 +42,25 @@ const highScoreValue = document.getElementById("high-score-value");
 
 // Initialize high score display
 highScoreValue.textContent = highScore;
+
+// Replace scene materials with untextured basics for prototype mode
+function applyPrototypeMaterials(scene) {
+  const fallbackColor = new T.Color(0xaaaaaa);
+  const toBasic = (mat) => {
+    const baseColor =
+      mat && mat.color ? mat.color.clone() : fallbackColor.clone();
+    return new T.MeshBasicMaterial({ color: baseColor });
+  };
+
+  scene.traverse((child) => {
+    if (!child.isMesh) return;
+    if (Array.isArray(child.material)) {
+      child.material = child.material.map((mat) => toBasic(mat));
+    } else {
+      child.material = toBasic(child.material);
+    }
+  });
+}
 
 // Initialize the game world
 function initGame() {
@@ -70,6 +91,7 @@ function initGame() {
     },
     isNightMode: isNightMode,
     characterMode: characterMode,
+    usePrototype: prototypeMode,
   });
 
   world.add(runnerGame);
@@ -184,7 +206,8 @@ function handleGameOver() {
 }
 
 // Start the game
-function startGame() {
+function startGame(usePrototype = false) {
+  prototypeMode = usePrototype;
   gameState = "playing";
   currentScore = 0;
   updateScore(0);
@@ -248,6 +271,7 @@ function restartGame() {
   runnerGame = null;
   gameState = "start";
   currentScore = 0;
+  prototypeMode = false;
 
   pauseScreen.style.display = "none";
   gameContainer.style.display = "none";
@@ -286,7 +310,10 @@ character2Button.addEventListener("click", () =>
 );
 
 // Event listeners
-startButton.addEventListener("click", startGame);
+startButton.addEventListener("click", () => startGame(false));
+if (prototypeButton) {
+  prototypeButton.addEventListener("click", () => startGame(true));
+}
 pauseButton.addEventListener("click", pauseGame);
 resumeButton.addEventListener("click", resumeGame);
 restartButton.addEventListener("click", restartGame);

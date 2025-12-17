@@ -33,6 +33,7 @@ export class Player extends GrObject {
     this.slideTilt = Math.PI / 2; // rotate to lie on the back while sliding (show back to camera)
 
     // --- CONFIG ---
+    const usePrototype = options.usePrototype || false;
     const runModelPath =
       options.runModelPath || "./game/assets/snazy_jogger_animated.glb";
     const jumpModelPath = options.jumpModelPath || "./game/assets/jumping.glb";
@@ -45,52 +46,62 @@ export class Player extends GrObject {
     this.jumpAction = null; // Jumping animation
     this.model = null; // Reference to the 3D character mesh
 
-    // --- LOAD BOTH MODELS ---
-    // We use Promise.all to wait for BOTH files to finish downloading
-    Promise.all([
-      load3DModel(runModelPath), // Runner model (configurable)
-      load3DModel(jumpModelPath), // Jump animation source
-    ])
-      .then(([runData, jumpData]) => {
-        // 1. SETUP THE VISIBLE MODEL (Use the Running file)
-        // Clone with skeleton preservation so animations work
-        const model = cloneSkeleton(runData.scene);
-        // Enlarge character a bit for better visibility
-        model.scale.set(runScale, runScale, runScale);
-        model.rotation.y = 0; // Face down-track (+Z)
+    if (usePrototype) {
+      // Simple sphere placeholder for prototype mode
+      const runnerGeom = new T.SphereGeometry(0.6 * runScale, 24, 16);
+      const runnerMat = new T.MeshStandardMaterial({ color: 0x3399ff });
+      const runnerMesh = new T.Mesh(runnerGeom, runnerMat);
+      runnerMesh.rotation.y = 0; // Face down-track (+Z)
+      group.add(runnerMesh);
+      this.model = runnerMesh;
+    } else {
+      // --- LOAD BOTH MODELS ---
+      // We use Promise.all to wait for BOTH files to finish downloading
+      Promise.all([
+        load3DModel(runModelPath), // Runner model (configurable)
+        load3DModel(jumpModelPath), // Jump animation source
+      ])
+        .then(([runData, jumpData]) => {
+          // 1. SETUP THE VISIBLE MODEL (Use the Running file)
+          // Clone with skeleton preservation so animations work
+          const model = cloneSkeleton(runData.scene);
+          // Enlarge character a bit for better visibility
+          model.scale.set(runScale, runScale, runScale);
+          model.rotation.y = 0; // Face down-track (+Z)
 
-        group.add(model);
-        this.model = model;
+          group.add(model);
+          this.model = model;
 
-        // 2. SETUP THE ANIMATION MIXER
-        // The mixer controls the *visible model*
-        this.mixer = new T.AnimationMixer(model);
+          // 2. SETUP THE ANIMATION MIXER
+          // The mixer controls the *visible model*
+          this.mixer = new T.AnimationMixer(model);
 
-        // 3. EXTRACT ANIMATIONS
-        // Get the run clip from the first file
-        const runClip = runData.animations[0];
-        // Get the jump clip from the second file
-        const jumpClip = jumpData.animations[0];
+          // 3. EXTRACT ANIMATIONS
+          // Get the run clip from the first file
+          const runClip = runData.animations[0];
+          // Get the jump clip from the second file
+          const jumpClip = jumpData.animations[0];
 
-        if (runClip && jumpClip) {
-          // Create playable actions
-          this.runAction = this.mixer.clipAction(runClip);
-          this.jumpAction = this.mixer.clipAction(jumpClip);
+          if (runClip && jumpClip) {
+            // Create playable actions
+            this.runAction = this.mixer.clipAction(runClip);
+            this.jumpAction = this.mixer.clipAction(jumpClip);
 
-          // Slow the running animation slightly
-          this.runAction.timeScale = runTimeScale;
+            // Slow the running animation slightly
+            this.runAction.timeScale = runTimeScale;
 
-          // Configure Jump to only play once (don't loop in mid-air)
-          this.jumpAction.loop = T.LoopOnce;
-          this.jumpAction.clampWhenFinished = true; // Freeze at end of jump
+            // Configure Jump to only play once (don't loop in mid-air)
+            this.jumpAction.loop = T.LoopOnce;
+            this.jumpAction.clampWhenFinished = true; // Freeze at end of jump
 
-          // Start Running immediately
-          this.runAction.play();
-        }
-      })
-      .catch((err) => {
-        console.error("Error loading character files:", err);
-      });
+            // Start Running immediately
+            this.runAction.play();
+          }
+        })
+        .catch((err) => {
+          console.error("Error loading character files:", err);
+        });
+    }
   }
 
   // --- MOVEMENT LOGIC ---
@@ -247,6 +258,7 @@ export class Obstacle extends GrObject {
   ) {
     const group = new T.Group();
 
+    const usePrototype = options.usePrototype || false;
     let geometry, material, mesh;
     let nonBlocking = false; // decorative obstacles that shouldn't collide
     let personMesh = null; // used for pedestrian obstacle bounding only
@@ -307,6 +319,26 @@ export class Obstacle extends GrObject {
         crossPause = 0;
         // Defer loader until after super so we can safely set properties on `this`
         startCrosswalkLoader = () => {
+          if (usePrototype) {
+            // Simple sphere walker for prototype mode
+            const walkerGeom = new T.SphereGeometry(0.35, 16, 12);
+            const walkerMat = new T.MeshStandardMaterial({
+              color: useYellowWalker ? 0xffdd55 : 0x55ccff,
+            });
+            const walker = new T.Mesh(walkerGeom, walkerMat);
+            walker.position.set(crossX, 0, 0);
+            walker.rotation.y = Math.PI / 2;
+            crossGroup.add(walker);
+            walkerMesh = walker;
+            this.walkerMesh = walker;
+            this.crossX = crossX;
+            this.crossDir = crossDir;
+            this.crossStep = crossStep;
+            this.crossPause = crossPause;
+            this.nonBlocking = false;
+            return;
+          }
+
           const walkerPath = useYellowWalker
             ? "./game/assets/girl_in_yellow_animated.glb"
             : "./game/assets/crosswalk_animated.glb";
@@ -592,6 +624,8 @@ export class ChaseCharacter extends GrObject {
 
     super("ChaseCharacter", group);
 
+    const usePrototype = options.usePrototype || false;
+
     this.mixer = null;
     this.runAction = null;
     this.model = null;
@@ -601,27 +635,35 @@ export class ChaseCharacter extends GrObject {
     const modelScale = options.modelScale ?? 0.65;
     const runTimeScale = options.runTimeScale ?? 1.05;
 
-    // Load animated chase character model
-    load3DModel(modelPath)
-      .then((data) => {
-        const model = cloneSkeleton(data.scene);
-        model.scale.set(modelScale, modelScale, modelScale);
-        model.rotation.y = 0; // Face down the track
-        group.add(model);
-        this.model = model;
+    if (usePrototype) {
+      const chaserGeom = new T.SphereGeometry(0.55 * modelScale, 20, 14);
+      const chaserMat = new T.MeshStandardMaterial({ color: 0xff6666 });
+      const chaserMesh = new T.Mesh(chaserGeom, chaserMat);
+      group.add(chaserMesh);
+      this.model = chaserMesh;
+    } else {
+      // Load animated chase character model
+      load3DModel(modelPath)
+        .then((data) => {
+          const model = cloneSkeleton(data.scene);
+          model.scale.set(modelScale, modelScale, modelScale);
+          model.rotation.y = 0; // Face down the track
+          group.add(model);
+          this.model = model;
 
-        // Drive the chase animation
-        this.mixer = new T.AnimationMixer(model);
-        const runClip = data.animations?.[0];
-        if (runClip) {
-          this.runAction = this.mixer.clipAction(runClip);
-          this.runAction.timeScale = runTimeScale; // Slightly faster to keep up
-          this.runAction.play();
-        }
-      })
-      .catch((err) => {
-        console.error("Error loading chase character model:", err);
-      });
+          // Drive the chase animation
+          this.mixer = new T.AnimationMixer(model);
+          const runClip = data.animations?.[0];
+          if (runClip) {
+            this.runAction = this.mixer.clipAction(runClip);
+            this.runAction.timeScale = runTimeScale; // Slightly faster to keep up
+            this.runAction.play();
+          }
+        })
+        .catch((err) => {
+          console.error("Error loading chase character model:", err);
+        });
+    }
   }
 
   update(delta, playerZ) {
@@ -632,6 +674,13 @@ export class ChaseCharacter extends GrObject {
         // Keep model rooted at group's origin in case the clip has root motion
         this.model.position.set(0, 0, 0);
       }
+    } else if (this.model) {
+      // Simple bob to show motion in prototype mode
+      const t =
+        typeof performance !== "undefined" && performance.now
+          ? performance.now() * 0.001
+          : Date.now() * 0.001;
+      this.model.position.y = Math.sin(t * 3) * 0.2;
     }
 
     // Follow player but stay behind
@@ -654,6 +703,7 @@ export class RunnerGame extends GrObject {
     this.isNightMode = params.isNightMode || false;
     this.roadHeight = params.roadHeight || 8;
     this.characterMode = params.characterMode || "character1";
+    this.usePrototype = params.usePrototype || false;
 
     const characterConfigs = {
       character1: {
@@ -694,6 +744,7 @@ export class RunnerGame extends GrObject {
       runModelPath: characterConfig.playerModel,
       runScale: characterConfig.playerScale,
       runTimeScale: characterConfig.playerRunTimeScale,
+      usePrototype: this.usePrototype,
     });
     this.obstacles = [];
     this.coins = [];
@@ -729,6 +780,7 @@ export class RunnerGame extends GrObject {
       modelPath: characterConfig.chaseModel,
       modelScale: characterConfig.chaseScale,
       runTimeScale: characterConfig.chaseRunTimeScale,
+      usePrototype: this.usePrototype,
     });
     group.add(this.chaseCharacter.objects[0]);
     this.chaseCharacter.objects[0].position.set(0, this.roadHeight, -8);
@@ -906,7 +958,7 @@ export class RunnerGame extends GrObject {
         "crosswalk",
         new T.Vector3(0, this.roadHeight, zPosition),
         this.carSpeed,
-        { forceWalker: false },
+        { forceWalker: false, usePrototype: this.usePrototype },
       );
       this.objects[0].add(crosswalk.objects[0]);
       this.obstacles.push(crosswalk);
